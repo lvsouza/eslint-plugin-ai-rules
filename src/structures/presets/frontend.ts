@@ -10,15 +10,15 @@ const frontendRelations: IRelationsConfig = {
     pageContext: 'src/pages/*/contexts',
     pageHelper: 'src/pages/*/helpers',
     page: 'src/pages/*',
-    components: 'src/components',
-    hooks: 'src/hooks',
-    contexts: 'src/contexts',
-    generated: 'src/services/generated',
-    services: 'src/services',
-    utils: 'src/utils',
-    helpers: 'src/helpers',
-    constants: 'src/constants',
-    env: 'src/env',
+    components: 'src/shared/components',
+    hooks: 'src/shared/hooks',
+    contexts: 'src/shared/contexts',
+    generated: 'src/shared/services/generated',
+    services: 'src/shared/services',
+    utils: 'src/shared/utils',
+    helpers: 'src/shared/helpers',
+    constants: 'src/shared/constants',
+    env: 'src/shared/env',
   },
   scope: {
     capture: 'page',
@@ -229,33 +229,48 @@ export const frontendPreset: IProjectPreset = {
           'vite-env.d.ts',
         ],
         folders: {
-          components: {
-            files: [pascalTsx],
+          shared: {
             folders: {
-              ui: {
-                files: [pascalTsOrTsx],
+              components: {
+                files: [pascalTsx],
+                folders: {
+                  ui: {
+                    files: [pascalTsOrTsx],
+                  },
+                },
+              },
+              constants: {
+                files: [pascalTs],
+              },
+              contexts: {
+                files: [
+                  {
+                    case: 'PascalCase',
+                    extensions: ['.tsx'],
+                  },
+                ],
+              },
+              env: {
+                files: ['index.ts'],
+              },
+              helpers: {
+                files: [pascalTs],
+              },
+              hooks: {
+                files: [pascalTs],
+              },
+              services: {
+                folders: {
+                  generated: { ignore: true },
+                  utils: {
+                    files: [pascalTs],
+                  },
+                },
+              },
+              utils: {
+                files: [pascalTs],
               },
             },
-          },
-          constants: {
-            files: [pascalTs],
-          },
-          contexts: {
-            files: [
-              {
-                case: 'PascalCase',
-                extensions: ['.tsx'],
-              },
-            ],
-          },
-          env: {
-            files: ['index.ts'],
-          },
-          hooks: {
-            files: [pascalTs],
-          },
-          helpers: {
-            files: [pascalTs],
           },
           pages: {
             files: [pascalTsx],
@@ -320,17 +335,6 @@ export const frontendPreset: IProjectPreset = {
               },
             },
           },
-          services: {
-            folders: {
-              generated: { ignore: true },
-              utils: {
-                files: [pascalTs],
-              },
-            },
-          },
-          utils: {
-            files: [pascalTs],
-          },
         },
       },
       e2e: {
@@ -367,7 +371,7 @@ export const frontendPreset: IProjectPreset = {
       ...commonIgnoredPaths,
       'playwright-report/**',
       'test-results/**',
-      'src/services/generated/**',
+      'src/shared/services/generated/**',
       'scripts/types/**',
     ],
   },

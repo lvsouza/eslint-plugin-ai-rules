@@ -71,17 +71,17 @@ for (const file of [
 }
 
 for (const file of [
-  'src/components/Button.tsx',
-  'src/components/ui/Input.tsx',
-  'src/hooks/UseAuth.ts',
-  'src/contexts/AuthContext.tsx',
-  'src/services/AuthService.ts',
-  'src/services/OtherService.ts',
-  'src/services/generated/client.ts',
-  'src/utils/Format.ts',
-  'src/helpers/Format.ts',
-  'src/constants/Values.ts',
-  'src/env/index.ts',
+  'src/shared/components/Button.tsx',
+  'src/shared/components/ui/Input.tsx',
+  'src/shared/hooks/UseAuth.ts',
+  'src/shared/contexts/AuthContext.tsx',
+  'src/shared/services/AuthService.ts',
+  'src/shared/services/OtherService.ts',
+  'src/shared/services/generated/client.ts',
+  'src/shared/utils/Format.ts',
+  'src/shared/helpers/Format.ts',
+  'src/shared/constants/Values.ts',
+  'src/shared/env/index.ts',
   'src/pages/orders/Orders.tsx',
   'src/pages/orders/helpers.ts',
   'src/pages/users/helpers.ts',
@@ -230,7 +230,7 @@ test('frontend preset allows local to global and same-page local imports', () =>
   assert.equal(
     frontendLint(
       'src/pages/orders/Orders.tsx',
-      "import '@/components/Button'\nimport '@/services/AuthService'\nimport '@/pages/orders/components/OrderCard'\n",
+      "import '@/shared/components/Button'\nimport '@/shared/services/AuthService'\nimport '@/pages/orders/components/OrderCard'\n",
     ).length,
     0,
   )
@@ -266,7 +266,7 @@ test('frontend preset blocks cross-page page imports', () => {
 test('frontend preset blocks global to local and cross-page imports', () => {
   assert.equal(
     frontendLint(
-      'src/components/Button.tsx',
+      'src/shared/components/Button.tsx',
       "import '@/pages/orders/components/OrderCard'\n",
     ).length,
     1,
@@ -294,14 +294,14 @@ test('frontend preset allows pageService and pageContext global dependencies', (
   assert.equal(
     frontendLint(
       'src/pages/orders/services/Orders.ts',
-      "import '@/services/AuthService'\n",
+      "import '@/shared/services/AuthService'\n",
     ).length,
     0,
   )
   assert.equal(
     frontendLint(
       'src/pages/orders/contexts/OrdersContext.tsx',
-      "import '@/services/AuthService'\nimport '@/pages/orders/services/Orders'\n",
+      "import '@/shared/services/AuthService'\nimport '@/pages/orders/services/Orders'\n",
     ).length,
     0,
   )
@@ -310,15 +310,15 @@ test('frontend preset allows pageService and pageContext global dependencies', (
 test('frontend preset allows utils and helpers cross imports', () => {
   assert.equal(
     frontendLint(
-      'src/utils/Format.ts',
-      "import '@/helpers/Format'\nimport '@/constants/Values'\n",
+      'src/shared/utils/Format.ts',
+      "import '@/shared/helpers/Format'\nimport '@/shared/constants/Values'\n",
     ).length,
     0,
   )
   assert.equal(
     frontendLint(
-      'src/helpers/Format.ts',
-      "import '@/utils/Format'\nimport '@/constants/Values'\n",
+      'src/shared/helpers/Format.ts',
+      "import '@/shared/utils/Format'\nimport '@/shared/constants/Values'\n",
     ).length,
     0,
   )
@@ -327,15 +327,15 @@ test('frontend preset allows utils and helpers cross imports', () => {
 test('frontend preset blocks same-layer services and allows same-layer components', () => {
   assert.equal(
     frontendLint(
-      'src/services/AuthService.ts',
-      "import '@/services/OtherService'\n",
+      'src/shared/services/AuthService.ts',
+      "import '@/shared/services/OtherService'\n",
     ).length,
     1,
   )
   assert.equal(
     frontendLint(
-      'src/components/Button.tsx',
-      "import '@/components/ui/Input'\n",
+      'src/shared/components/Button.tsx',
+      "import '@/shared/components/ui/Input'\n",
     ).length,
     0,
   )

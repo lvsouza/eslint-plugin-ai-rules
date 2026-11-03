@@ -422,7 +422,7 @@ structure: {
 
 ```ts
 structure: {
-  ignoredPaths: ['dist/**', 'coverage/**', 'src/services/generated/**'],
+  ignoredPaths: ['dist/**', 'coverage/**', 'src/shared/services/generated/**'],
 }
 ```
 
@@ -579,6 +579,8 @@ These violations are intentional and should be fixed during migration.
 
 ### Frontend preset relations
 
+All global frontend layers live under `src/shared` (for example `src/shared/components`). Page-local layers remain under `src/pages/*`.
+
 | Layer | Can import | Same layer |
 |-------|------------|------------|
 | components | components, hooks, contexts, services, generated, utils, helpers, constants, env | yes |
@@ -731,32 +733,36 @@ Custom relation message:
 │   index.html, AGENTS.md, README.md, LICENSE
 ├── src/
 │   ├── App.tsx, AppRoutes.tsx, main.tsx, index.css, vite-env.d.ts
-│   ├── components/*.tsx
-│   ├── components/ui/*.{ts,tsx}
-│   ├── constants/*.ts
-│   ├── contexts/*.tsx
-│   ├── env/index.ts
-│   ├── helpers/*.ts
-│   ├── hooks/*.ts
-│   ├── pages/*.tsx
-│   ├── pages/<feature-kebab>/
-│   │   ├── *.tsx, helpers.ts, schema.ts, types.ts
-│   │   ├── components/*.tsx
-│   │   ├── hooks/*.ts
-│   │   ├── services/*.ts
+│   ├── shared/
+│   │   ├── components/
+│   │   │   ├── *.tsx
+│   │   │   └── ui/*.{ts,tsx}
+│   │   ├── constants/*.ts
 │   │   ├── contexts/*.tsx
+│   │   ├── env/index.ts
 │   │   ├── helpers/*.ts
-│   │   └── tabs/<tab-kebab>/
-│   │       ├── *.tsx
-│   │       └── <section-kebab>/
-│   │           ├── *.tsx, *.ts
-│   │           ├── components/*.tsx
-│   │           └── contents/
-│   │               ├── *.tsx
-│   │               └── components/*.tsx
-│   ├── services/generated/** (ignored)
-│   ├── services/utils/*.ts
-│   └── utils/*.ts
+│   │   ├── hooks/*.ts
+│   │   ├── services/
+│   │   │   ├── generated/** (ignored)
+│   │   │   └── utils/*.ts
+│   │   └── utils/*.ts
+│   └── pages/
+│       ├── *.tsx
+│       └── <feature-kebab>/
+│           ├── *.tsx, helpers.ts, schema.ts, types.ts
+│           ├── components/*.tsx
+│           ├── hooks/*.ts
+│           ├── services/*.ts
+│           ├── contexts/*.tsx
+│           ├── helpers/*.ts
+│           └── tabs/<tab-kebab>/
+│               ├── *.tsx
+│               └── <section-kebab>/
+│                   ├── *.tsx, *.ts
+│                   ├── components/*.tsx
+│                   └── contents/
+│                       ├── *.tsx
+│                       └── components/*.tsx
 ├── e2e/
 │   ├── .auth/** (ignored)
 │   ├── fixtures/*

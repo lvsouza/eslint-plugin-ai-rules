@@ -18,7 +18,7 @@ test('creates a frontend config from a preset', () => {
   assert.deepEqual(config.files, ['**/*.{js,cjs,mjs,jsx,ts,tsx}'])
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'off')
-  assert.ok(config.ignores.includes('src/services/generated/**'))
+  assert.ok(config.ignores.includes('src/shared/services/generated/**'))
   assert.equal(projectSettings(config).preset, 'frontend')
   assert.ok(projectSettings(config).structure.folders.src)
 })
@@ -427,7 +427,7 @@ test('merges ignoredPaths from preset and custom structure', () => {
   ])
 
   assert.ok(config.ignores.includes('custom/**'))
-  assert.ok(config.ignores.includes('src/services/generated/**'))
+  assert.ok(config.ignores.includes('src/shared/services/generated/**'))
   assert.ok(
     projectSettings(config).structure.ignoredPaths.includes('custom/**'),
   )

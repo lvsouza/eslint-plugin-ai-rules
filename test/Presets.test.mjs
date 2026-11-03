@@ -29,9 +29,9 @@ function lint(filename, structure) {
 
 const validFrontendPaths = [
   'src/App.tsx',
-  'src/components/ui/Button.tsx',
-  'src/contexts/AuthContext.tsx',
-  'src/hooks/UseMediaQuery.ts',
+  'src/shared/components/ui/Button.tsx',
+  'src/shared/contexts/AuthContext.tsx',
+  'src/shared/hooks/UseMediaQuery.ts',
   'src/pages/Dashboard.tsx',
   'src/pages/orders/Orders.tsx',
   'src/pages/orders/components/OrderStatusStepper.tsx',
@@ -43,9 +43,9 @@ const validFrontendPaths = [
   'src/pages/orders/services/OrdersService.ts',
   'src/pages/orders/contexts/OrdersContext.tsx',
   'src/pages/orders/helpers/Format.ts',
-  'src/helpers/Format.ts',
-  'src/services/generated/admin-backend/models/index.ts',
-  'src/utils/FormatDate.ts',
+  'src/shared/helpers/Format.ts',
+  'src/shared/services/generated/admin-backend/models/index.ts',
+  'src/shared/utils/FormatDate.ts',
   'e2e/pages/LoginPage.ts',
   'e2e/specs/Authentication.spec.ts',
   'e2e/support/api/AdminApi.ts',
@@ -58,7 +58,9 @@ const invalidFrontendPaths = [
   ['src/pages/MyFeature/Dashboard.tsx', 'folderNameMismatch'],
   ['src/pages/orders/utils/Helpers.ts', 'folderNotAllowed'],
   ['src/pages/orders/orders.tsx', 'fileNameMismatch'],
-  ['src/services/random.ts', 'fileNotAllowed'],
+  ['src/components/ui/Button.tsx', 'folderNotAllowed'],
+  ['src/services/random.ts', 'folderNotAllowed'],
+  ['src/shared/services/random.ts', 'fileNotAllowed'],
   ['random.ts', 'fileNotAllowed'],
 ]
 

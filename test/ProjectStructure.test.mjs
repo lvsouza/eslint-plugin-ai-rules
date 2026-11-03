@@ -138,7 +138,7 @@ ruleTester.run('project-structure', rule, {
     },
     {
       code: '',
-      filename: 'src/services/generated/foo.ts',
+      filename: 'src/shared/services/generated/foo.ts',
       settings: frontendSettings,
     },
     { code: '', filename: 'scripts/SortImports.ts', settings: frontendSettings },
@@ -275,12 +275,12 @@ ruleTester.run('project-structure', rule, {
     },
     {
       code: '',
-      filename: 'src/services/random.ts',
+      filename: 'src/shared/services/random.ts',
       settings: frontendSettings,
       errors: [
         {
           message:
-            'File "random.ts" is not allowed inside "src/services". Allowed files: none.',
+            'File "random.ts" is not allowed inside "src/shared/services". Allowed files: none.',
         },
       ],
     },

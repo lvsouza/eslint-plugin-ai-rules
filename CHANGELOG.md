@@ -10,7 +10,7 @@
 - `relations` DSL for layer-based import boundaries backed by `eslint-plugin-boundaries`.
 - Backend and frontend presets now ship default architecture relation rules.
 - Backend preset covers `database`, `repositories`, generic `services/<service-kebab>` modules and `test`.
-- Frontend preset models global layers plus page-local scopes.
+- Frontend preset models global layers under `src/shared` plus page-local scopes.
 - `allowSameLayer` to block imports within the same layer.
 - `scope` to restrict local imports to the same page.
 - `allow`/`deny` rules per layer, with external imports allowed by default.

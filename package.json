@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-ai-rules",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "ESLint plugin com regras úteis para projetos com ESLint - AI Rules",
   "type": "module",
   "main": "./dist/index.cjs",
