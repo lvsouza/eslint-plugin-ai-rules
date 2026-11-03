@@ -18,7 +18,8 @@
 
 ### Changed
 
-- Runtime dependencies are `@stylistic/eslint-plugin`, `eslint-plugin-import-x`, `eslint-plugin-boundaries`, `eslint-import-resolver-typescript` and `typescript-eslint`.
+- Runtime dependencies are `@stylistic/eslint-plugin`, `eslint-plugin-import-x`, `eslint-plugin-boundaries` and `typescript-eslint`.
+- `eslint-import-resolver-typescript` is now a peer dependency used by `relations`.
 - Minimum Node.js version is now 20.
 - ESLint peer range is now `^9.22.0 || ^10.0.0`.
 - TypeScript peer range is now `>=5.0.0 <6.1.0`.

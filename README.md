@@ -9,12 +9,31 @@ Flat-config-only ESLint plugin for AI-generated code. It catches filename/import
 
 > **ESLint 9.22+ or 10 only.** Uses flat config (`eslint.config.{js,mjs,ts}`). No legacy `.eslintrc` support.
 
+## Start here
+
+| If your project is... | Use |
+|-----------------------|-----|
+| Frontend only | `preset: 'frontend'` |
+| Backend only | `preset: 'backend'` |
+| Frontend + backend in one repo | two projects with different `rootFolder` |
+| Neither frontend nor backend | `preset: 'other'` |
+| Layered architecture | `relations` (controller → useCase → repository) |
+
+Before installing, check:
+
+- Node.js `>= 20`
+- ESLint `^9.22.0` or `^10.0.0`
+- TypeScript `>= 5.0.0 < 6.1.0`
+- `typescript-eslint` configured as parser
+- `tsconfig.json` if you use aliases like `@/*`
+- `eslint-import-resolver-typescript` installed for TS alias resolution
+
 ## Quick start
 
 Install:
 
 ```bash
-npm i -D eslint-plugin-ai-rules eslint typescript
+npm i -D eslint-plugin-ai-rules eslint typescript typescript-eslint eslint-import-resolver-typescript
 ```
 
 Configure the project structure and let the plugin apply its recommended rules:
@@ -70,12 +89,16 @@ npx eslint --fix .
 - [Project structure](#project-structure)
 - [Examples](#examples)
 - [Architecture relations](#architecture-relations)
+- [Expected diagnostics](#expected-diagnostics)
 - [Preset reference](#preset-reference)
 - [Structure DSL](#structure-dsl)
 - [Limitations](#limitations)
 - [Rules](#rules)
+- [What runs automatically](#what-runs-automatically)
 - [Recommended preset](#recommended-preset)
 - [Troubleshooting](#troubleshooting)
+- [Common mistakes](#common-mistakes)
+- [Migrating from 0.2.x](#migrating-from-02x)
 - [Development](#development)
 - [Publishing](#publishing)
 - [Legacy](#legacy)
@@ -123,11 +146,16 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 
 ## Requirements
 
-- Node `>=20`
-- ESLint `^9.22.0 || ^10.0.0`
-- TypeScript `>=5.0.0 <6.1.0`
+| Tool | Version |
+|------|---------|
+| Node.js | `>= 20` |
+| ESLint | `^9.22.0 || ^10.0.0` |
+| TypeScript | `>= 5.0.0 < 6.1.0` |
+| ESLint resolver | `eslint-import-resolver-typescript` `^4.4.5` |
 
-The plugin ships the dependencies it uses at runtime: `@stylistic/eslint-plugin`, `eslint-plugin-import-x`, `eslint-plugin-boundaries`, `eslint-import-resolver-typescript` and `typescript-eslint`. You do not need to install them separately.
+Runtime dependencies are `@stylistic/eslint-plugin`, `eslint-plugin-import-x`, `eslint-plugin-boundaries` and `typescript-eslint`.
+
+`eslint-import-resolver-typescript` is a peer dependency used by `relations` to resolve TS aliases. npm installs peers automatically; with Yarn 1 or pnpm, install it explicitly.
 
 ## Project structure
 
@@ -193,6 +221,48 @@ export default defineConfig([
     { rootFolder: 'packages/api', preset: 'backend' },
   ]),
 ])
+```
+
+### Backend with structure and relations (copy-paste)
+
+```ts
+import { defineConfig } from 'eslint/config'
+import aiRules from 'eslint-plugin-ai-rules'
+import tseslint from 'typescript-eslint'
+
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    {
+      rootFolder: '.',
+      preset: 'backend',
+      relations: {
+        layers: {
+          controller: 'src/http/controllers',
+          useCase: 'src/use-case',
+          repository: 'src/repositories',
+          service: 'src/services',
+          helper: 'src/helpers',
+        },
+        rules: [
+          { from: 'controller', allow: ['useCase', 'helper'] },
+          { from: 'useCase', allow: ['repository', 'service', 'helper'] },
+          { from: 'repository', allow: ['helper'] },
+          { from: 'service', allow: ['repository', 'helper'] },
+          { from: 'helper', allow: [] },
+        ],
+      },
+    },
+  ]),
+])
+```
+
+With this config:
+
+```ts
+// src/http/controllers/ListProducts.ts
+import { listProducts } from '@/use-case/product/List' // allowed
+import { productRepository } from '@/repositories/ProductRepository' // blocked
 ```
 
 ### Opting out with `other`
@@ -508,9 +578,49 @@ relations: {
 
 When the project root has a `tsconfig.json`, the generated config uses `eslint-import-resolver-typescript`, so aliases such as `@/repositories/UserRepository` are resolved automatically.
 
+Make sure the resolver is installed at the project level:
+
+```bash
+npm i -D eslint-import-resolver-typescript
+```
+
 For JS projects without `tsconfig.json`, the Node resolver is used.
 
 `relations` uses `eslint-plugin-boundaries` under the hood and enables `boundaries/dependencies`.
+
+## Expected diagnostics
+
+Configuration warning:
+
+```text
+[eslint-plugin-ai-rules] Project structure validation is not configured.
+Configure it with aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' | 'backend' }]).
+If this project is not a frontend/backend, use preset: 'other' to disable this warning.
+```
+
+Structure violation:
+
+```text
+src/pages/MyFeature/Dashboard.tsx
+  error  Folder "MyFeature" inside "src/pages" must match kebab-case.  ai-rules/project-structure
+```
+
+Relation violation:
+
+```text
+src/http/controllers/ListProducts.ts
+  error  Dependencies to elements of type "repository" are not allowed in elements of type "controller".  boundaries/dependencies
+```
+
+Custom relation message:
+
+```ts
+{
+  from: 'controller',
+  deny: ['repository'],
+  message: 'Controllers must use use-cases instead of repositories.',
+}
+```
 
 ## Preset reference
 
@@ -820,6 +930,18 @@ export default defineConfig([
 ])
 ```
 
+## What runs automatically
+
+| You use | What is enabled |
+|---------|-----------------|
+| `aiRules.configs.recommended` | bundled rules + configuration warning |
+| `aiRules.configs.projects([...])` | recommended rules + `project-structure` |
+| `projects([...])` with `structure` | structure validation |
+| `projects([...])` with `relations` | `boundaries/dependencies` |
+| `projects([...])` with both | structure + relations |
+
+`projects()` does **not** configure the TypeScript parser. Pair it with `typescript-eslint` as shown in the examples.
+
 ## Recommended preset
 
 `aiRules.configs.recommended` is file-agnostic. It provides:
@@ -909,6 +1031,59 @@ Use the `ignore` option or disable `ai-rules/filename-pascal-case` for tool-mand
 }
 ```
 
+## Common mistakes
+
+### Using `recommended` without `projects()`
+
+You get the configuration warning and no project structure validation. Use `projects([...])` or explicitly opt out with `preset: 'other'`.
+
+### Forgetting the TypeScript parser
+
+`aiRules.configs.recommended` does not configure `languageOptions.parser`. Pair it with `tseslint.configs.recommended` or a parser.
+
+### Aliases are not enforced in relations
+
+Make sure the project has `tsconfig.json` with `paths`, and install `eslint-import-resolver-typescript`.
+
+### A relation layer does not match
+
+Layers must point to folders, not files:
+
+```ts
+layers: {
+  controller: 'src/http/controllers', // correct
+  // controller: 'src/http/controllers/*.ts', // avoid
+}
+```
+
+### Type-only imports are blocked
+
+That is the default. Set `allowTypeImports: true` globally or per rule.
+
+### An external package or unknown file is not blocked
+
+`relations` only checks known local layers. External packages, Node core modules, same-layer imports and files outside any layer are allowed.
+
+### Duplicate or overlapping roots
+
+Nested roots are supported, but duplicate roots are rejected. Use the most specific configuration for each project.
+
+## Migrating from 0.2.x
+
+1. Replace `aiRules.configs.recommended` with `aiRules.configs.projects([...])`.
+2. Choose a preset: `frontend`, `backend`, or `other`.
+3. Set `rootFolder` to the folder containing `package.json`.
+4. Add `relations` if you want layer boundaries.
+5. Keep pairing with `typescript-eslint`.
+
+If you intentionally do not want structure validation:
+
+```ts
+...aiRules.configs.projects([
+  { rootFolder: '.', preset: 'other' },
+])
+```
+
 ## Development
 
 ```bash
@@ -932,7 +1107,7 @@ npm pack --dry-run     # verify published files
 
 `test:consumer` and `test:package` are release checks and are not part of `verify`. They may use the network.
 
-The consumer smoke test accepts `ESLINT_VERSION`:
+The consumer smoke test covers structure validation, relations with aliases and type-only imports, warning/suppression, ESM and CJS. It accepts `ESLINT_VERSION`:
 
 ```bash
 ESLINT_VERSION=9.22.0 npm run test:consumer

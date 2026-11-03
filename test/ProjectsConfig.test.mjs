@@ -94,6 +94,33 @@ test('builds boundaries config from relations', () => {
   )
 })
 
+test('combines preset structure with relations', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'backend',
+      relations: {
+        layers: {
+          controller: 'src/http/controllers',
+          repository: 'src/repositories',
+        },
+        rules: [
+          {
+            from: 'controller',
+            deny: ['repository'],
+          },
+        ],
+      },
+    },
+  ])
+
+  assert.equal(config.rules['ai-rules/project-structure'], 'error')
+  assert.equal(config.rules['boundaries/dependencies'][0], 'error')
+  assert.ok(config.plugins.boundaries)
+  assert.ok(projectSettings(config).structure.folders.src)
+  assert.ok(projectSettings(config).relations)
+})
+
 test('normalizes rootFolder values', () => {
   const absoluteRoot = path.resolve(process.cwd(), 'apps/web')
   const cases = [
@@ -648,6 +675,165 @@ test('validates relations declarations', () => {
       },
     ]),
     /at least one path/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: 'src',
+          rules: [],
+        },
+      },
+    ]),
+    /layers.*must be an object/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+          },
+          rules: 'nope',
+        },
+      },
+    ]),
+    /rules.*must be an array/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+          },
+          rules: [null],
+        },
+      },
+    ]),
+    /must be an object/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+          },
+          rules: [
+            { from: '', deny: [] },
+          ],
+        },
+      },
+    ]),
+    /from.*non-empty string/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+            repository: 'src/repositories',
+          },
+          rules: [
+            { from: 'controller', allow: 'repository' },
+          ],
+        },
+      },
+    ]),
+    /allow.*must be an array/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          allowTypeImports: 'yes',
+          layers: {
+            controller: 'src/controllers',
+          },
+          rules: [],
+        },
+      },
+    ]),
+    /allowTypeImports.*boolean/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+            repository: 'src/repositories',
+          },
+          rules: [
+            {
+              from: 'controller',
+              deny: ['repository'],
+              allowTypeImports: 'yes',
+            },
+          ],
+        },
+      },
+    ]),
+    /allowTypeImports.*boolean/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+            repository: 'src/repositories',
+          },
+          rules: [
+            {
+              from: 'controller',
+              deny: ['repository'],
+              message: '',
+            },
+          ],
+        },
+      },
+    ]),
+    /message.*non-empty string/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+            repository: 'src/repositories',
+          },
+          rules: [
+            {
+              from: 'controller',
+              deny: ['missing'],
+            },
+          ],
+        },
+      },
+    ]),
+    /unknown layer "missing"/,
   )
 })
 

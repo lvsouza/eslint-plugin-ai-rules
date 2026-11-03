@@ -31,7 +31,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "yarn build && node --test test/*.test.mjs",
-    "test:coverage": "yarn build && c8 --include dist/index.js --check-coverage --lines 90 --branches 85 --functions 90 --reporter=text node --test test/*.test.mjs",
+    "test:coverage": "yarn build && c8 --include dist/index.js --check-coverage --lines 95 --branches 90 --functions 95 --reporter=text node --test test/*.test.mjs",
     "test:consumer": "node scripts/TestConsumer.mjs",
     "test:package": "npx --yes publint --pack npm && npx --yes @arethetypeswrong/cli --pack .",
     "test:release": "yarn test:consumer && yarn test:package",
@@ -61,11 +61,11 @@
   },
   "peerDependencies": {
     "eslint": "^9.22.0 || ^10.0.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
     "typescript": ">=5.0.0 <6.1.0"
   },
   "dependencies": {
     "@stylistic/eslint-plugin": "^5.0.0",
-    "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-boundaries": "^7.4.1",
     "eslint-plugin-import-x": "^4.0.0",
     "typescript-eslint": "^8.0.0"
@@ -75,6 +75,7 @@
     "@types/node": "^22.0.0",
     "c8": "^12.0.0",
     "eslint": "^10.0.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
     "globals": "^17.0.0",
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",

@@ -32,7 +32,10 @@ write('src/repositories/UserRepository.ts', 'export const repo = 1\n')
 write('src/use-case/GetUser.ts', 'export const getUser = 1\n')
 write('src/services/UserService.ts', 'export const service = 1\n')
 write('src/helpers/Format.ts', 'export const format = 1\n')
+write('src/shared/Shared.ts', 'export const shared = 1\n')
+write('src/other/Unknown.ts', 'export const unknown = 1\n')
 write('src/http/controllers/AnotherController.ts', 'export const another = 1\n')
+write('src/features/orders/controllers/OrdersController.ts', 'export const orders = 1\n')
 
 after(() => {
   rmSync(tempRoot, { recursive: true, force: true })
@@ -106,6 +109,57 @@ const denyConfig = buildConfig({
       deny: ['repository'],
       message: 'Controllers must use use-cases instead of repositories.',
     },
+  ],
+})
+
+const perRuleTypeConfig = buildConfig({
+  layers: baseLayers,
+  rules: [
+    {
+      from: 'controller',
+      allow: ['useCase', 'helper'],
+      allowTypeImports: true,
+    },
+    { from: 'useCase', allow: ['repository', 'service', 'helper'] },
+    { from: 'repository', allow: ['helper'] },
+    { from: 'service', allow: ['repository', 'helper'] },
+    { from: 'helper', allow: [] },
+  ],
+})
+
+const perRuleTypeDeniedConfig = buildConfig({
+  allowTypeImports: true,
+  layers: baseLayers,
+  rules: [
+    {
+      from: 'controller',
+      allow: ['useCase', 'helper'],
+      allowTypeImports: false,
+    },
+    { from: 'useCase', allow: ['repository', 'service', 'helper'] },
+    { from: 'repository', allow: ['helper'] },
+    { from: 'service', allow: ['repository', 'helper'] },
+    { from: 'helper', allow: [] },
+  ],
+})
+
+const multiPathConfig = buildConfig({
+  layers: {
+    ...baseLayers,
+    helper: ['src/helpers', 'src/shared'],
+  },
+  rules: [
+    { from: 'controller', allow: ['helper'] },
+  ],
+})
+
+const globLayerConfig = buildConfig({
+  layers: {
+    featureController: 'src/features/*/controllers',
+    repository: 'src/repositories',
+  },
+  rules: [
+    { from: 'featureController', deny: ['repository'] },
   ],
 })
 
@@ -204,6 +258,90 @@ test('supports deny rules with custom messages', () => {
 
   assert.equal(messages.length, 1)
   assert.match(messages[0].message, /Controllers must use use-cases/)
+})
+
+test('supports per-rule type import overrides', () => {
+  assert.equal(
+    lint(
+      perRuleTypeConfig,
+      'src/http/controllers/TestController.ts',
+      "import type { TUser } from '@/repositories/UserRepository'\n",
+    ).length,
+    0,
+  )
+
+  assert.equal(
+    lint(
+      perRuleTypeDeniedConfig,
+      'src/http/controllers/TestController.ts',
+      "import type { TUser } from '@/repositories/UserRepository'\n",
+    ).length,
+    1,
+  )
+})
+
+test('blocks type-only imports in deny rules by default', () => {
+  assert.equal(
+    lint(
+      denyConfig,
+      'src/http/controllers/TestController.ts',
+      "import type { TUser } from '@/repositories/UserRepository'\n",
+    ).length,
+    1,
+  )
+})
+
+test('checks dynamic imports and re-exports', () => {
+  assert.equal(
+    lint(
+      allowConfig,
+      'src/http/controllers/TestController.ts',
+      "import('@/repositories/UserRepository')\n",
+    ).length,
+    1,
+  )
+
+  assert.equal(
+    lint(
+      allowConfig,
+      'src/http/controllers/TestController.ts',
+      "export { repo } from '@/repositories/UserRepository'\n",
+    ).length,
+    1,
+  )
+})
+
+test('allows imports from files outside any layer', () => {
+  assert.equal(
+    lint(
+      allowConfig,
+      'src/http/controllers/TestController.ts',
+      "import { unknown } from '@/other/Unknown'\n",
+    ).length,
+    0,
+  )
+})
+
+test('supports layers with multiple paths', () => {
+  assert.equal(
+    lint(
+      multiPathConfig,
+      'src/http/controllers/TestController.ts',
+      "import { format } from '@/helpers/Format'\nimport { shared } from '@/shared/Shared'\n",
+    ).length,
+    0,
+  )
+})
+
+test('supports glob patterns in layers', () => {
+  assert.equal(
+    lint(
+      globLayerConfig,
+      'src/features/orders/controllers/OrdersController.ts',
+      "import { repo } from '@/repositories/UserRepository'\n",
+    ).length,
+    1,
+  )
 })
 
 test('works for JS projects without tsconfig', () => {
