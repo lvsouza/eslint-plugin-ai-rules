@@ -2,12 +2,12 @@
 
 [![npm version](https://img.shields.io/npm/v/eslint-plugin-ai-rules)](https://www.npmjs.com/package/eslint-plugin-ai-rules)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![node >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
-[![eslint ^9](https://img.shields.io/badge/eslint-%5E9-4B32C3)](https://eslint.org)
+[![node >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
+[![eslint 9.22+ / 10](https://img.shields.io/badge/eslint-%5E9.22%20%7C%7C%20%5E10-4B32C3)](https://eslint.org)
 
 Flat-config-only ESLint plugin for AI-generated code. It catches filename/import drift and enforces a project structure you declare, with ready-to-use `frontend` and `backend` presets.
 
-> **ESLint 9+ only.** Uses flat config (`eslint.config.{js,mjs,ts}`). No legacy `.eslintrc` support.
+> **ESLint 9.22+ or 10 only.** Uses flat config (`eslint.config.{js,mjs,ts}`). No legacy `.eslintrc` support.
 
 ## Quick start
 
@@ -71,6 +71,7 @@ npx eslint --fix .
 - [Examples](#examples)
 - [Preset reference](#preset-reference)
 - [Structure DSL](#structure-dsl)
+- [Limitations](#limitations)
 - [Rules](#rules)
 - [Recommended preset](#recommended-preset)
 - [Troubleshooting](#troubleshooting)
@@ -99,23 +100,31 @@ It disappears when you provide a valid configuration:
 
 A project containing only `rootFolder` and an empty `structure` is still considered unconfigured and will warn.
 
+For CI or temporary runs, silence the warning without changing the config:
+
+```bash
+AI_RULES_SILENT=1 npx eslint .
+```
+
+The warning is still recommended as a setup check, so prefer `preset: 'other'` for projects that intentionally do not use structure validation.
+
 ## Features
 
 - **Project structure validation** — folder hierarchy, dynamic folders, folder/file casing, prefixes, suffixes and regex patterns.
 - **Frontend/backend presets** — ready-to-use structures based on real projects.
 - **Custom structure** — declare exactly how your project must be organized.
-- **Monorepo friendly** — one `rootFolder` per project root.
+- **Monorepo friendly** — one `rootFolder` per project, including nested roots.
 - **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
 - **Bundled rules** — ships with useful `import-x`, `@stylistic` and `@typescript-eslint` rules.
 - **ESM + CJS** — `dist/index.js` and `dist/index.cjs`, with correct type declarations for both.
 
 ## Requirements
 
-- Node `>=18`
-- ESLint `^9.0.0`
-- TypeScript `>=5.0.0`
+- Node `>=20`
+- ESLint `^9.22.0 || ^10.0.0`
+- TypeScript `>=5.0.0 <6.1.0`
 
-Dependencies such as `@eslint/js`, `eslint-plugin-import-x`, `@stylistic/eslint-plugin`, `typescript-eslint` and `globals` are already bundled as dependencies. You do not need to install them separately.
+The plugin ships only the dependencies it uses at runtime: `@stylistic/eslint-plugin`, `eslint-plugin-import-x` and `typescript-eslint`. You do not need to install them separately.
 
 ## Project structure
 
@@ -132,7 +141,8 @@ interface IProjectDefinition {
 - `rootFolder` is the project root, usually the folder containing `package.json`.
 - `rootFolder` is relative to the current working directory.
 - Absolute paths inside the current working directory are also accepted.
-- Projects cannot have overlapping roots.
+- Nested roots are supported; the most specific root wins.
+- Duplicate roots are rejected.
 - `preset` provides a base structure.
 - `structure` is merged on top of the preset.
 - `preset: 'other'` disables structure validation unless a custom `structure` is provided.
@@ -573,6 +583,14 @@ files: [
 | `ignore` | overrides the preset |
 | `ignoredPaths` | union of preset and custom paths |
 
+## Limitations
+
+- Structure validation only runs for files ESLint actually lints.
+- Required empty folders are not detected.
+- Glob matching supports `*`, `**`, `?` and `{a,b}` only.
+- Nested roots are supported, but duplicate roots are rejected.
+- ESLint versions below 9.22 are not supported.
+
 ## Rules
 
 ### `ai-rules/project-structure`
@@ -718,6 +736,12 @@ Or explicitly opt out:
 
 A project with only `rootFolder` and an empty `structure` still warns.
 
+For temporary runs or CI, use:
+
+```bash
+AI_RULES_SILENT=1 npx eslint .
+```
+
 ### `project-structure` is not running
 
 Make sure you are using `aiRules.configs.projects([...])` or manually setting `settings['ai-rules'].project` and enabling `ai-rules/project-structure`.
@@ -773,6 +797,7 @@ npm run lint -- --fix
 npm run build          # tsup -> ESM + CJS + declarations
 npm run dev            # tsup --watch
 npm run verify         # typecheck + test + lint + pack
+npm run test:coverage  # c8 coverage with thresholds
 npm run test:consumer  # install packed tarball in a temp project
 npm run test:package   # publint + arethetypeswrong
 npm run test:release   # consumer + package checks
@@ -780,6 +805,15 @@ npm pack --dry-run     # verify published files
 ```
 
 `test:consumer` and `test:package` are release checks and are not part of `verify`. They may use the network.
+
+The consumer smoke test accepts `ESLINT_VERSION`:
+
+```bash
+ESLINT_VERSION=9.22.0 npm run test:consumer
+ESLINT_VERSION='^10.0.0' npm run test:consumer
+```
+
+CI runs `verify`, coverage and consumer checks on Node 20, 22 and 24.
 
 ### Project structure
 
@@ -815,7 +849,11 @@ eslint-ai-guard/
 ├── test/
 ├── scripts/
 │   └── TestConsumer.mjs
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── eslint/
+├── CHANGELOG.md
 ├── eslint.config.mjs
 ├── tsconfig.json
 ├── tsup.config.ts
@@ -836,12 +874,13 @@ eslint-ai-guard/
 
 ```bash
 npm run verify
+npm run test:coverage
 npm run test:release
 npm version patch|minor|major
 npm publish --access public
 ```
 
-`prepublishOnly` runs `verify` and refuses to publish with uncommitted changes.
+`prepublishOnly` runs `verify` and refuses to publish with any uncommitted, staged or untracked changes.
 
 ## Legacy
 

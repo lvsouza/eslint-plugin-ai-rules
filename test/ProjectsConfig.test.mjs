@@ -38,6 +38,20 @@ test('prefixes files and ignores for monorepo projects', () => {
   assert.equal(projectSettings(configs[1]).rootFolder, 'apps/api')
 })
 
+test('supports nested roots and ignores child roots on the parent config', () => {
+  const configs = projects([
+    { rootFolder: '.', preset: 'other' },
+    { rootFolder: 'apps/web', preset: 'frontend' },
+    { rootFolder: 'apps/web/admin', preset: 'backend' },
+  ])
+
+  assert.equal(configs.length, 3)
+  assert.ok(configs[0].ignores.includes('apps/web/**'))
+  assert.ok(configs[0].ignores.includes('apps/web/admin/**'))
+  assert.ok(configs[1].ignores.includes('apps/web/admin/**'))
+  assert.equal(configs[2].settings['ai-rules'].project.rootFolder, 'apps/web/admin')
+})
+
 test('normalizes rootFolder values', () => {
   const absoluteRoot = path.resolve(process.cwd(), 'apps/web')
   const cases = [
@@ -334,15 +348,7 @@ test('validates project definitions', () => {
       { rootFolder: 'app', preset: 'frontend' },
       { rootFolder: 'app', preset: 'backend' },
     ]),
-    /overlaps/,
-  )
-
-  assert.throws(
-    () => projects([
-      { rootFolder: '.', preset: 'frontend' },
-      { rootFolder: 'apps/web', preset: 'frontend' },
-    ]),
-    /overlaps/,
+    /duplicated/,
   )
 
   assert.throws(

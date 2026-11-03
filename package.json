@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-ai-rules",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "ESLint plugin com regras úteis para projetos com ESLint - AI Rules",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -31,12 +31,13 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "yarn build && node --test test/*.test.mjs",
+    "test:coverage": "yarn build && c8 --include dist/index.js --check-coverage --lines 90 --branches 85 --functions 90 --reporter=text node --test test/*.test.mjs",
     "test:consumer": "node scripts/TestConsumer.mjs",
     "test:package": "npx --yes publint --pack npm && npx --yes @arethetypeswrong/cli --pack .",
     "test:release": "yarn test:consumer && yarn test:package",
     "verify": "yarn typecheck && yarn test && yarn lint && npm pack --dry-run",
     "prepack": "yarn build",
-    "prepublishOnly": "git diff --quiet || (echo '✖ uncommitted changes — commit before publishing' && exit 1) && yarn verify",
+    "prepublishOnly": "test -z \"$(git status --porcelain)\" || (echo '✖ working tree not clean — commit before publishing' && exit 1) && yarn verify",
     "postpublish": "echo '✔ published. Run: git push --follow-tags'"
   },
   "publishConfig": {
@@ -59,24 +60,25 @@
     "url": "https://github.com/lvsouza/eslint-ai-guard/issues"
   },
   "peerDependencies": {
-    "eslint": "^9.0.0",
-    "typescript": ">=5.0.0"
+    "eslint": "^9.22.0 || ^10.0.0",
+    "typescript": ">=5.0.0 <6.1.0"
   },
   "dependencies": {
-    "@eslint/js": "^9.0.0",
     "@stylistic/eslint-plugin": "^5.0.0",
     "eslint-plugin-import-x": "^4.0.0",
-    "globals": "^16.0.0",
     "typescript-eslint": "^8.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.0",
     "@types/node": "^22.0.0",
-    "eslint": "^9.0.0",
+    "c8": "^12.0.0",
+    "eslint": "^10.0.0",
+    "globals": "^17.0.0",
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.6.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

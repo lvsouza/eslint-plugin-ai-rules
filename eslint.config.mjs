@@ -13,6 +13,7 @@ const repositoryStructure = {
     'yarn.lock',
     'tsconfig.json',
     'README.md',
+    'CHANGELOG.md',
     'LICENSE',
     '.gitignore',
     '*.config.{js,mjs,cjs,ts}',

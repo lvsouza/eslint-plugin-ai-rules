@@ -21,6 +21,7 @@ test('ESM exports are wired correctly', () => {
   assert.equal(aiRules.rules['project-setup'], projectSetup)
   assert.equal(aiRules.rules['project-structure'], projectStructure)
   assert.equal(aiRules.meta.name, 'eslint-plugin-ai-rules')
+  assert.equal(aiRules.meta.version, '0.3.0')
   assert.equal(plugin.rules['project-setup'], projectSetup)
   assert.equal(plugin.rules['project-structure'], projectStructure)
   assert.equal(recommended[0].rules['ai-rules/project-setup'], 'warn')
@@ -40,6 +41,7 @@ test('build artifacts and package metadata exist', () => {
     readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
   )
 
+  assert.equal(aiRules.meta.version, packageJson.version)
   assert.equal(packageJson.main, './dist/index.cjs')
   assert.equal(packageJson.module, './dist/index.js')
   assert.equal(packageJson.types, './dist/index.d.ts')

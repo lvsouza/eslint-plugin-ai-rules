@@ -26,11 +26,20 @@ function normalizeRootFolder(rootFolder: string): string {
   return relativePath.split(path.sep).join('/')
 }
 
-function isSameOrInside(parent: string, child: string): boolean {
-  if (parent === child) return true
+function isInside(parent: string, child: string): boolean {
+  if (parent === child) return false
   if (parent === '.') return true
 
   return child.startsWith(`${parent}/`)
+}
+
+function findNestedRoots(
+  rootFolder: string,
+  definitions: Array<{ rootFolder: string }>,
+): string[] {
+  return definitions
+    .map((definition) => definition.rootFolder)
+    .filter((candidate) => isInside(rootFolder, candidate))
 }
 
 function validateDefinition(
@@ -65,7 +74,9 @@ function validateDefinition(
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
 
-      throw new Error(`Invalid project at index ${index}: ${message}`)
+      throw new Error(`Invalid project at index ${index}: ${message}`, {
+        cause: error,
+      })
     }
   }
 }
@@ -91,17 +102,16 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     }
   })
 
-  for (let left = 0; left < normalizedDefinitions.length; left++) {
-    for (let right = left + 1; right < normalizedDefinitions.length; right++) {
-      const leftRoot = normalizedDefinitions[left].rootFolder
-      const rightRoot = normalizedDefinitions[right].rootFolder
+  const seenRoots = new Set<string>()
 
-      if (isSameOrInside(leftRoot, rightRoot) || isSameOrInside(rightRoot, leftRoot)) {
-        throw new Error(
-          `Invalid projects: rootFolder "${leftRoot}" overlaps with "${rightRoot}".`,
-        )
-      }
+  for (const definition of normalizedDefinitions) {
+    if (seenRoots.has(definition.rootFolder)) {
+      throw new Error(
+        `Invalid projects: rootFolder "${definition.rootFolder}" is duplicated.`,
+      )
     }
+
+    seenRoots.add(definition.rootFolder)
   }
 
   return normalizedDefinitions.map((definition) => {
@@ -112,9 +122,16 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     const rootPrefix = definition.rootFolder === '.'
       ? ''
       : `${definition.rootFolder}/`
-    const ignoredPaths = (structure.ignoredPaths ?? []).map(
-      (pattern) => `${rootPrefix}${pattern}`,
+    const nestedRoots = findNestedRoots(
+      definition.rootFolder,
+      normalizedDefinitions,
     )
+    const ignoredPaths = Array.from(new Set([
+      ...(structure.ignoredPaths ?? []).map(
+        (pattern) => `${rootPrefix}${pattern}`,
+      ),
+      ...nestedRoots.map((nestedRoot) => `${nestedRoot}/**`),
+    ]))
     const rules: Linter.RulesRecord = {
       ...baseConfig.rules,
       ...(preset?.rules ?? {}),

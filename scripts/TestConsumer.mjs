@@ -15,6 +15,7 @@ const tarballDir = path.join(tempRoot, 'tarball')
 const consumerDir = path.join(tempRoot, 'consumer')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+const eslintVersion = process.env.ESLINT_VERSION ?? '^10.0.0'
 
 function run(command, args, options) {
   return spawnSync(command, args, {
@@ -70,8 +71,8 @@ try {
       '--no-package-lock',
       '--prefer-offline',
       tarballPath,
-      'eslint@^9.0.0',
-      'typescript@>=5.0.0',
+      `eslint@${eslintVersion}`,
+      'typescript@>=5.0.0 <6.1.0',
       'typescript-eslint@^8.0.0',
     ],
     {

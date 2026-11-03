@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version:
+          - 20
+          - 22
+          - 24
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn verify
+      - run: yarn test:coverage
+
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:package
+
+  consumer:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        eslint-version:
+          - '9.22.0'
+          - '^10.0.0'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:consumer
+        env:
+          ESLINT_VERSION: ${{ matrix.eslint-version }}

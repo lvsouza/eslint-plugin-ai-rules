@@ -20,6 +20,12 @@ function isConfiguredProject(project: IResolvedProject): boolean {
 
 function warnOnce(): void {
   if (hasWarned) return
+  if (
+    process.env.AI_RULES_SILENT === '1' ||
+    process.env.AI_RULES_SILENT === 'true'
+  ) {
+    return
+  }
 
   hasWarned = true
   console.warn(

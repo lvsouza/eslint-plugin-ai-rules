@@ -8,7 +8,7 @@ const repoRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const distUrl = pathToFileURL(path.join(repoRoot, 'dist/index.js')).href
 const packageJsonPath = path.join(repoRoot, 'package.json')
 
-function runSetupRule(settings, files = ['Test.ts']) {
+function runSetupRule(settings, files = ['Test.ts'], env = {}) {
   const script = `
 import { createRequire } from 'node:module'
 const require = createRequire(${JSON.stringify(packageJsonPath)})
@@ -30,6 +30,10 @@ for (const filename of ${JSON.stringify(files)}) {
   return spawnSync(process.execPath, ['--input-type=module', '-e', script], {
     cwd: repoRoot,
     encoding: 'utf8',
+    env: {
+      ...process.env,
+      ...env,
+    },
   })
 }
 
@@ -119,6 +123,10 @@ test('warns when only rootFolder is provided', () => {
       },
     }),
   )
+})
+
+test('can be silenced with AI_RULES_SILENT=1', () => {
+  assertNoWarning(runSetupRule(null, ['Test.ts'], { AI_RULES_SILENT: '1' }))
 })
 
 test('warns only once per process', () => {
