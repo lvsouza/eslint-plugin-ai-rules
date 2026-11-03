@@ -5,10 +5,13 @@ import { projectSetup } from './rules/ProjectSetup'
 import { sortImports } from './rules/SortImports'
 
 
+declare const __AI_RULES_VERSION__: string
+
+
 export const plugin = {
   meta: {
     name: 'eslint-plugin-ai-rules',
-    version: '0.3.0',
+    version: __AI_RULES_VERSION__,
   },
   rules: {
     'filename-pascal-case': filenamePascalCase,

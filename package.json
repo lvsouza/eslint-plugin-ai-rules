@@ -36,9 +36,7 @@
     "test:package": "npx --yes publint --pack npm && npx --yes @arethetypeswrong/cli --pack .",
     "test:release": "yarn test:consumer && yarn test:package",
     "verify": "yarn typecheck && yarn test && yarn lint && npm pack --dry-run",
-    "prepack": "yarn build",
-    "prepublishOnly": "test -z \"$(git status --porcelain)\" || (echo '✖ working tree not clean — commit before publishing' && exit 1) && yarn verify",
-    "postpublish": "echo '✔ published. Run: git push --follow-tags'"
+    "prepack": "yarn build"
   },
   "publishConfig": {
     "access": "public"

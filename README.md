@@ -1299,15 +1299,18 @@ eslint-ai-guard/
 
 ## Publishing
 
-```bash
-npm run verify
-npm run test:coverage
-npm run test:release
-npm version patch|minor|major
-npm publish --access public
-```
+1. Change `version` in `package.json`.
+2. Optionally run `yarn build` to check the build and generated version.
+3. Run `npm publish`.
 
-`prepublishOnly` runs `verify` and refuses to publish with any uncommitted, staged or untracked changes.
+`prepack` runs `yarn build` automatically, so `npm publish` always packs a fresh `dist`. The plugin version is injected from `package.json` during the build, so you do not need to edit `src/plugin.ts`.
+
+For an extra check before publishing:
+
+```bash
+yarn verify
+npm pack --dry-run
+```
 
 ## Legacy
 

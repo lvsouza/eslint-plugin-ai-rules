@@ -30,7 +30,8 @@
 - TypeScript peer range is now `>=5.0.0 <6.1.0`.
 - `projects()` includes the recommended rules and scopes them to each project root.
 - `projects()` disables `ai-rules/filename-pascal-case` because file names are validated by `project-structure`.
-- `prepublishOnly` now refuses to publish with any uncommitted, staged or untracked changes.
+- The plugin version is injected from `package.json` at build time.
+- `npm publish` no longer requires a clean git tree or automatic `verify`; `prepack` still builds `dist`.
 
 ### Removed
 

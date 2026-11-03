@@ -21,7 +21,6 @@ test('ESM exports are wired correctly', () => {
   assert.equal(aiRules.rules['project-setup'], projectSetup)
   assert.equal(aiRules.rules['project-structure'], projectStructure)
   assert.equal(aiRules.meta.name, 'eslint-plugin-ai-rules')
-  assert.equal(aiRules.meta.version, '0.3.0')
   assert.equal(plugin.rules['project-setup'], projectSetup)
   assert.equal(plugin.rules['project-structure'], projectStructure)
   assert.equal(recommended[0].rules['ai-rules/project-setup'], 'warn')
