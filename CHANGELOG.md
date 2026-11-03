@@ -7,6 +7,9 @@
 - Project structure validation with `ai-rules/project-structure`.
 - `frontend`, `backend` and `other` presets.
 - Custom structure DSL with folder hierarchy, dynamic folders, casing, prefixes, suffixes and regex patterns.
+- `relations` DSL for layer-based import boundaries backed by `eslint-plugin-boundaries`.
+- `allow`/`deny` rules per layer, with same-layer and external imports allowed by default.
+- Configurable type-only import exemptions, blocked by default.
 - `ai-rules/project-setup` console warning when project structure validation is not configured.
 - `AI_RULES_SILENT=1` to suppress the configuration warning.
 - Nested `rootFolder` support with parent config ignores.
@@ -15,7 +18,7 @@
 
 ### Changed
 
-- Runtime dependencies reduced to `@stylistic/eslint-plugin`, `eslint-plugin-import-x` and `typescript-eslint`.
+- Runtime dependencies are `@stylistic/eslint-plugin`, `eslint-plugin-import-x`, `eslint-plugin-boundaries`, `eslint-import-resolver-typescript` and `typescript-eslint`.
 - Minimum Node.js version is now 20.
 - ESLint peer range is now `^9.22.0 || ^10.0.0`.
 - TypeScript peer range is now `>=5.0.0 <6.1.0`.

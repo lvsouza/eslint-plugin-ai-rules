@@ -1,8 +1,11 @@
+import boundaries from 'eslint-plugin-boundaries'
 import type { Linter } from 'eslint'
 import path from 'node:path'
 
 import type { IProjectDefinition, IProjectPreset, IProjectStructure, TProjectPreset, } from '../types/structure'
+import { buildRelationsRuleOptions, buildRelationsSettings } from '../structures/buildRelationsConfig'
 import { hasStructureRules } from '../structures/hasStructureRules'
+import { validateRelations } from '../structures/validateRelations'
 import { validateStructure } from '../structures/validateStructure'
 import { mergeStructure } from '../structures/mergeStructure'
 import { getPreset } from '../structures/presets'
@@ -79,6 +82,18 @@ function validateDefinition(
       })
     }
   }
+
+  if (definition.relations !== undefined) {
+    try {
+      validateRelations(definition.relations)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+
+      throw new Error(`Invalid project at index ${index}: ${message}`, {
+        cause: error,
+      })
+    }
+  }
 }
 
 function resolveStructure(
@@ -118,6 +133,8 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     const preset = definition.preset ? getPreset(definition.preset) : undefined
     const structure = resolveStructure(definition, preset)
     const structureEnabled = hasStructureRules(structure)
+    const relations = definition.relations
+    const rootAbsolutePath = path.resolve(process.cwd(), definition.rootFolder)
     const baseConfig = recommended[0]
     const rootPrefix = definition.rootFolder === '.'
       ? ''
@@ -139,19 +156,35 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
       'ai-rules/filename-pascal-case': structureEnabled
         ? 'off'
         : baseConfig.rules?.['ai-rules/filename-pascal-case'] ?? 'error',
+      ...(relations
+        ? {
+            'boundaries/dependencies': [
+              'error',
+              buildRelationsRuleOptions(relations),
+            ],
+          }
+        : {}),
     }
 
     return {
       ...baseConfig,
+      plugins: {
+        ...baseConfig.plugins,
+        ...(relations ? { boundaries } : {}),
+      },
       files: [`${rootPrefix}**/*.{js,cjs,mjs,jsx,ts,tsx}`],
       ...(ignoredPaths.length > 0 ? { ignores: ignoredPaths } : {}),
       settings: {
         ...baseConfig.settings,
+        ...(relations
+          ? buildRelationsSettings(relations, rootAbsolutePath)
+          : {}),
         'ai-rules': {
           project: {
             rootFolder: definition.rootFolder,
             preset: definition.preset,
             structure,
+            relations,
           },
         },
       },

@@ -26,10 +26,25 @@ export interface IProjectStructure extends IStructureNode {
   ignoredPaths?: string[]
 }
 
+export interface IRelationsRule {
+  from: string
+  allow?: string[]
+  deny?: string[]
+  allowTypeImports?: boolean
+  message?: string
+}
+
+export interface IRelationsConfig {
+  layers: Record<string, string | string[]>
+  rules: IRelationsRule[]
+  allowTypeImports?: boolean
+}
+
 export interface IProjectDefinition {
   rootFolder: string
   preset?: TProjectPreset
   structure?: IProjectStructure
+  relations?: IRelationsConfig
 }
 
 export interface IProjectPreset {
@@ -41,6 +56,7 @@ export interface IResolvedProject {
   rootFolder: string
   preset?: TProjectPreset
   structure: IProjectStructure
+  relations?: IRelationsConfig
 }
 
 export interface IAiRulesSettings {

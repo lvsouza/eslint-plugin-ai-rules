@@ -5,7 +5,7 @@ import { recommended } from './configs/recommended'
 import { projects } from './configs/projects'
 import { plugin } from './plugin'
 
-export type { IAiRulesSettings, INameRule, IProjectDefinition, IProjectPreset, IProjectStructure, IResolvedProject, IStructureNode, TFileRule, TNameCase, TProjectPreset, } from './types/structure'
+export type { IAiRulesSettings, INameRule, IProjectDefinition, IProjectPreset, IProjectStructure, IRelationsConfig, IRelationsRule, IResolvedProject, IStructureNode, TFileRule, TNameCase, TProjectPreset, } from './types/structure'
 export { presets } from './structures/presets'
 export * from './rules/index'
 

@@ -69,6 +69,7 @@ npx eslint --fix .
 - [Requirements](#requirements)
 - [Project structure](#project-structure)
 - [Examples](#examples)
+- [Architecture relations](#architecture-relations)
 - [Preset reference](#preset-reference)
 - [Structure DSL](#structure-dsl)
 - [Limitations](#limitations)
@@ -97,6 +98,7 @@ It disappears when you provide a valid configuration:
 - `preset: 'backend'`
 - `preset: 'other'`
 - a custom non-empty `structure`
+- a `relations` configuration
 
 A project containing only `rootFolder` and an empty `structure` is still considered unconfigured and will warn.
 
@@ -113,9 +115,10 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 - **Project structure validation** — folder hierarchy, dynamic folders, folder/file casing, prefixes, suffixes and regex patterns.
 - **Frontend/backend presets** — ready-to-use structures based on real projects.
 - **Custom structure** — declare exactly how your project must be organized.
+- **Architecture relations** — enforce which layers can import which other layers.
 - **Monorepo friendly** — one `rootFolder` per project, including nested roots.
 - **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
-- **Bundled rules** — ships with useful `import-x`, `@stylistic` and `@typescript-eslint` rules.
+- **Bundled rules** — ships with useful `import-x`, `@stylistic`, `boundaries` and `@typescript-eslint` rules.
 - **ESM + CJS** — `dist/index.js` and `dist/index.cjs`, with correct type declarations for both.
 
 ## Requirements
@@ -124,7 +127,7 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 - ESLint `^9.22.0 || ^10.0.0`
 - TypeScript `>=5.0.0 <6.1.0`
 
-The plugin ships only the dependencies it uses at runtime: `@stylistic/eslint-plugin`, `eslint-plugin-import-x` and `typescript-eslint`. You do not need to install them separately.
+The plugin ships the dependencies it uses at runtime: `@stylistic/eslint-plugin`, `eslint-plugin-import-x`, `eslint-plugin-boundaries`, `eslint-import-resolver-typescript` and `typescript-eslint`. You do not need to install them separately.
 
 ## Project structure
 
@@ -135,6 +138,7 @@ interface IProjectDefinition {
   rootFolder: string
   preset?: 'frontend' | 'backend' | 'other'
   structure?: IProjectStructure
+  relations?: IRelationsConfig
 }
 ```
 
@@ -145,6 +149,7 @@ interface IProjectDefinition {
 - Duplicate roots are rejected.
 - `preset` provides a base structure.
 - `structure` is merged on top of the preset.
+- `relations` enables architecture dependency policies with `eslint-plugin-boundaries`.
 - `preset: 'other'` disables structure validation unless a custom `structure` is provided.
 
 `aiRules.configs.projects([...])` generates one flat config per project. Each config:
@@ -154,7 +159,8 @@ interface IProjectDefinition {
 - enables `ai-rules/project-structure`;
 - adds `ignores` from `ignoredPaths`;
 - includes the recommended rules;
-- disables `ai-rules/filename-pascal-case`, because file naming is handled by `project-structure`.
+- disables `ai-rules/filename-pascal-case`, because file naming is handled by `project-structure`;
+- when `relations` is present, registers `boundaries` and enables `boundaries/dependencies`.
 
 ## Examples
 
@@ -391,6 +397,121 @@ export default [
 
 Multiple projects can be passed directly through `settings['ai-rules'].projects`. The rule chooses the most specific root for each file.
 
+## Architecture relations
+
+`relations` enforces which layers can import which other layers. It complements `structure`: `structure` validates paths and names, `relations` validates import direction.
+
+```ts
+interface IRelationsRule {
+  from: string
+  allow?: string[]
+  deny?: string[]
+  allowTypeImports?: boolean
+  message?: string
+}
+
+interface IRelationsConfig {
+  layers: Record<string, string | string[]>
+  rules: IRelationsRule[]
+  allowTypeImports?: boolean
+}
+```
+
+Example for a backend:
+
+```ts
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    {
+      rootFolder: 'apps/backend',
+      preset: 'backend',
+      relations: {
+        layers: {
+          controller: 'src/http/controllers',
+          useCase: 'src/use-case',
+          repository: 'src/repositories',
+          service: 'src/services',
+          helper: 'src/helpers',
+        },
+        rules: [
+          { from: 'controller', allow: ['useCase', 'helper'] },
+          { from: 'useCase', allow: ['repository', 'service', 'helper'] },
+          { from: 'repository', allow: ['helper'] },
+          { from: 'service', allow: ['repository', 'helper'] },
+          { from: 'helper', allow: [] },
+        ],
+      },
+    },
+  ]),
+])
+```
+
+Semantics:
+
+- Layers are folder paths relative to `rootFolder`.
+- `allow` means the layer can import only the listed layers.
+- `deny` means the layer cannot import the listed layers.
+- `allow` and `deny` are mutually exclusive per rule.
+- Imports inside the same layer are allowed automatically.
+- External packages and Node core modules are allowed automatically.
+- Local files that do not match any layer are ignored by default.
+- Only one rule per `from` layer is allowed.
+
+### Type-only imports
+
+Type-only imports follow the same restrictions by default:
+
+```ts
+import type { TUser } from '@/repositories/UserRepository' // blocked
+```
+
+Allow them globally:
+
+```ts
+relations: {
+  allowTypeImports: true,
+  layers: { /* ... */ },
+  rules: [/* ... */],
+}
+```
+
+Or for a specific layer:
+
+```ts
+{
+  from: 'controller',
+  allow: ['useCase'],
+  allowTypeImports: true,
+}
+```
+
+### Deny rules and messages
+
+```ts
+relations: {
+  layers: {
+    controller: 'src/http/controllers',
+    repository: 'src/repositories',
+  },
+  rules: [
+    {
+      from: 'controller',
+      deny: ['repository'],
+      message: 'Controllers must use use-cases instead of repositories.',
+    },
+  ],
+}
+```
+
+### Aliases and TypeScript
+
+When the project root has a `tsconfig.json`, the generated config uses `eslint-import-resolver-typescript`, so aliases such as `@/repositories/UserRepository` are resolved automatically.
+
+For JS projects without `tsconfig.json`, the Node resolver is used.
+
+`relations` uses `eslint-plugin-boundaries` under the hood and enables `boundaries/dependencies`.
+
 ## Preset reference
 
 ### Frontend
@@ -589,6 +710,9 @@ files: [
 - Required empty folders are not detected.
 - Glob matching supports `*`, `**`, `?` and `{a,b}` only.
 - Nested roots are supported, but duplicate roots are rejected.
+- Relation layers must point to folders, not individual files.
+- TypeScript aliases in `relations` require the project `tsconfig.json`.
+- Type-only imports follow the same restrictions by default.
 - ESLint versions below 9.22 are not supported.
 
 ## Rules
@@ -673,6 +797,8 @@ Groups:
 | `@typescript-eslint/consistent-type-imports` | `['error', { prefer: 'type-imports' }]` | Prefer `import type` |
 | `@typescript-eslint/no-unused-vars` | `['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]` | Ignore unused values prefixed with `_` |
 | `@typescript-eslint/naming-convention` | interfaces `I` prefix, type aliases `T` prefix | Enforce `IUser` and `TUser` style |
+
+When `relations` is configured, `projects()` also registers `eslint-plugin-boundaries` and enables `boundaries/dependencies` with the generated layer policies.
 
 The plugin also configures the `import-x` resolver with:
 
@@ -829,8 +955,10 @@ eslint-ai-guard/
 │   ├── types/
 │   │   └── structure.ts
 │   ├── structures/
+│   │   ├── buildRelationsConfig.ts
 │   │   ├── hasStructureRules.ts
 │   │   ├── mergeStructure.ts
+│   │   ├── validateRelations.ts
 │   │   ├── validateStructure.ts
 │   │   └── presets/
 │   │       ├── frontend.ts

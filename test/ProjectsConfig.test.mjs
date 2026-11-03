@@ -52,6 +52,48 @@ test('supports nested roots and ignores child roots on the parent config', () =>
   assert.equal(configs[2].settings['ai-rules'].project.rootFolder, 'apps/web/admin')
 })
 
+test('builds boundaries config from relations', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'other',
+      relations: {
+        layers: {
+          controller: 'src/http/controllers',
+          repository: 'src/repositories',
+        },
+        rules: [
+          {
+            from: 'controller',
+            deny: ['repository'],
+          },
+        ],
+      },
+    },
+  ])
+
+  assert.ok(config.plugins.boundaries)
+  assert.equal(config.settings['boundaries/root-path'], process.cwd())
+  assert.deepEqual(config.settings['boundaries/elements'], [
+    {
+      type: 'controller',
+      pattern: ['src/http/controllers'],
+      partialMatch: false,
+    },
+    {
+      type: 'repository',
+      pattern: ['src/repositories'],
+      partialMatch: false,
+    },
+  ])
+  assert.equal(config.rules['boundaries/dependencies'][0], 'error')
+  assert.ok(config.settings['import/resolver'])
+  assert.equal(
+    projectSettings(config).relations.layers.controller,
+    'src/http/controllers',
+  )
+})
+
 test('normalizes rootFolder values', () => {
   const absoluteRoot = path.resolve(process.cwd(), 'apps/web')
   const cases = [
@@ -515,6 +557,97 @@ test('validates structure declarations', () => {
       },
     ]),
     /must be an object/,
+  )
+})
+
+test('validates relations declarations', () => {
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {},
+          rules: [],
+        },
+      },
+    ]),
+    /layers.*cannot be empty/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+          },
+          rules: [
+            {
+              from: 'controller',
+              allow: ['repository'],
+            },
+          ],
+        },
+      },
+    ]),
+    /unknown layer "repository"/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+            repository: 'src/repositories',
+          },
+          rules: [
+            {
+              from: 'controller',
+              allow: ['repository'],
+              deny: ['repository'],
+            },
+          ],
+        },
+      },
+    ]),
+    /exactly one of "allow" or "deny"/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+            repository: 'src/repositories',
+          },
+          rules: [
+            { from: 'controller', deny: ['repository'] },
+            { from: 'controller', deny: ['repository'] },
+          ],
+        },
+      },
+    ]),
+    /duplicate rule/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: [],
+          },
+          rules: [],
+        },
+      },
+    ]),
+    /at least one path/,
   )
 })
 

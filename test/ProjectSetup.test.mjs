@@ -93,6 +93,31 @@ test('does not warn for frontend and backend presets', () => {
   )
 })
 
+test('does not warn when relations are configured', () => {
+  assertNoWarning(
+    runSetupRule({
+      'ai-rules': {
+        project: {
+          rootFolder: '.',
+          structure: {},
+          relations: {
+            layers: {
+              controller: 'src/http/controllers',
+              repository: 'src/repositories',
+            },
+            rules: [
+              {
+                from: 'controller',
+                deny: ['repository'],
+              },
+            ],
+          },
+        },
+      },
+    }),
+  )
+})
+
 test('does not warn for a custom structure', () => {
   assertNoWarning(
     runSetupRule({

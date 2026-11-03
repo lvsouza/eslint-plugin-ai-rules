@@ -7,6 +7,8 @@ import { hasStructureRules } from '../structures/hasStructureRules'
 let hasWarned = false
 
 function isConfiguredProject(project: IResolvedProject): boolean {
+  if (project.relations) return true
+
   if (
     project.preset === 'frontend' ||
     project.preset === 'backend' ||
