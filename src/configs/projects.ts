@@ -7,6 +7,7 @@ import { buildRelationsRuleOptions, buildRelationsSettings } from '../structures
 import { hasStructureRules } from '../structures/hasStructureRules'
 import { validateRelations } from '../structures/validateRelations'
 import { validateStructure } from '../structures/validateStructure'
+import { mergeRelations } from '../structures/mergeRelations'
 import { mergeStructure } from '../structures/mergeStructure'
 import { getPreset } from '../structures/presets'
 import { recommended } from './recommended'
@@ -85,7 +86,7 @@ function validateDefinition(
 
   if (definition.relations !== undefined) {
     try {
-      validateRelations(definition.relations)
+      validateRelations(definition.relations, { validateReferences: false })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
 
@@ -129,11 +130,23 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     seenRoots.add(definition.rootFolder)
   }
 
-  return normalizedDefinitions.map((definition) => {
+  return normalizedDefinitions.map((definition, index) => {
     const preset = definition.preset ? getPreset(definition.preset) : undefined
     const structure = resolveStructure(definition, preset)
     const structureEnabled = hasStructureRules(structure)
-    const relations = definition.relations
+    const relations = mergeRelations(preset?.relations, definition.relations)
+
+    if (relations) {
+      try {
+        validateRelations(relations)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+
+        throw new Error(`Invalid project at index ${index}: ${message}`, {
+          cause: error,
+        })
+      }
+    }
     const rootAbsolutePath = path.resolve(process.cwd(), definition.rootFolder)
     const baseConfig = recommended[0]
     const rootPrefix = definition.rootFolder === '.'

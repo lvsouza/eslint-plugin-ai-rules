@@ -30,14 +30,21 @@ export interface IRelationsRule {
   from: string
   allow?: string[]
   deny?: string[]
+  allowSameLayer?: boolean
   allowTypeImports?: boolean
   message?: string
+}
+
+export interface IRelationsScope {
+  capture: string
+  layers: string[]
 }
 
 export interface IRelationsConfig {
   layers: Record<string, string | string[]>
   rules: IRelationsRule[]
   allowTypeImports?: boolean
+  scope?: IRelationsScope
 }
 
 export interface IProjectDefinition {
@@ -49,6 +56,7 @@ export interface IProjectDefinition {
 
 export interface IProjectPreset {
   structure: IProjectStructure
+  relations?: IRelationsConfig
   rules?: Linter.RulesRecord
 }
 

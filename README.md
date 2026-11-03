@@ -136,9 +136,9 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 ## Features
 
 - **Project structure validation** — folder hierarchy, dynamic folders, folder/file casing, prefixes, suffixes and regex patterns.
-- **Frontend/backend presets** — ready-to-use structures based on real projects.
+- **Frontend/backend presets** — ready-to-use structures and architecture relations based on real projects.
 - **Custom structure** — declare exactly how your project must be organized.
-- **Architecture relations** — enforce which layers can import which other layers.
+- **Architecture relations** — enforce which layers can import which other layers, including global vs page-local scope.
 - **Monorepo friendly** — one `rootFolder` per project, including nested roots.
 - **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
 - **Bundled rules** — ships with useful `import-x`, `@stylistic`, `boundaries` and `@typescript-eslint` rules.
@@ -223,7 +223,7 @@ export default defineConfig([
 ])
 ```
 
-### Backend with structure and relations (copy-paste)
+### Backend with preset (copy-paste)
 
 ```ts
 import { defineConfig } from 'eslint/config'
@@ -236,33 +236,27 @@ export default defineConfig([
     {
       rootFolder: '.',
       preset: 'backend',
-      relations: {
-        layers: {
-          controller: 'src/http/controllers',
-          useCase: 'src/use-case',
-          repository: 'src/repositories',
-          service: 'src/services',
-          helper: 'src/helpers',
-        },
-        rules: [
-          { from: 'controller', allow: ['useCase', 'helper'] },
-          { from: 'useCase', allow: ['repository', 'service', 'helper'] },
-          { from: 'repository', allow: ['helper'] },
-          { from: 'service', allow: ['repository', 'helper'] },
-          { from: 'helper', allow: [] },
-        ],
-      },
     },
   ]),
 ])
 ```
 
-With this config:
+The backend preset includes strict architecture relations. With this config:
 
 ```ts
 // src/http/controllers/ListProducts.ts
 import { listProducts } from '@/use-case/product/List' // allowed
 import { productRepository } from '@/repositories/ProductRepository' // blocked
+```
+
+To override a preset relation, declare only the layer/rule you want to change:
+
+```ts
+relations: {
+  rules: [
+    { from: 'service', allow: ['generated', 'env'], allowSameLayer: false },
+  ],
+}
 ```
 
 ### Opting out with `other`
@@ -476,14 +470,21 @@ interface IRelationsRule {
   from: string
   allow?: string[]
   deny?: string[]
+  allowSameLayer?: boolean
   allowTypeImports?: boolean
   message?: string
+}
+
+interface IRelationsScope {
+  capture: string
+  layers: string[]
 }
 
 interface IRelationsConfig {
   layers: Record<string, string | string[]>
   rules: IRelationsRule[]
   allowTypeImports?: boolean
+  scope?: IRelationsScope
 }
 ```
 
@@ -495,7 +496,7 @@ export default defineConfig([
   ...aiRules.configs.projects([
     {
       rootFolder: 'apps/backend',
-      preset: 'backend',
+      preset: 'other',
       relations: {
         layers: {
           controller: 'src/http/controllers',
@@ -523,10 +524,107 @@ Semantics:
 - `allow` means the layer can import only the listed layers.
 - `deny` means the layer cannot import the listed layers.
 - `allow` and `deny` are mutually exclusive per rule.
-- Imports inside the same layer are allowed automatically.
+- `allowSameLayer` defaults to `true`. Set it to `false` to block imports within the same layer.
 - External packages and Node core modules are allowed automatically.
 - Local files that do not match any layer are ignored by default.
 - Only one rule per `from` layer is allowed.
+- `scope` allows comparing a captured value, such as the current page, to restrict local imports to the same page.
+
+Presets already include relation rules. You only need to declare `relations` when you want to add or override layers and rules:
+
+```ts
+aiRules.configs.projects([
+  {
+    rootFolder: 'apps/backend',
+    preset: 'backend',
+    relations: {
+      rules: [
+        { from: 'service', allow: ['generated', 'env'], allowSameLayer: false },
+      ],
+    },
+  },
+])
+```
+
+The preset backend is strict: controllers only use use-cases plus infrastructure, use-cases cannot access database/helpers directly, repositories cannot import repositories, and services cannot import services. Structural exceptions exist for `generated` and `database/schema`. Service subfolders are generic modules with their own scope.
+
+The preset frontend uses global layers plus page-local scope. Global layers cannot import page-local files. Page-local files can import global layers and files from the same page only.
+
+### Backend preset relations
+
+| Layer | Can import | Same layer |
+|-------|------------|------------|
+| controller | useCase, http, generated, helper, env | no |
+| http | useCase, helper, generated | no |
+| useCase | repository, service, serviceModule, generated | yes |
+| repository | database, databaseSchema | no |
+| service | generated, env | no |
+| generated | — | yes |
+| serviceModule | generated, env | yes, within the same module |
+| database | databaseSchema, env | no |
+| databaseSchema | — | yes |
+| helper | — | no |
+| env | — | no |
+| types | — | no |
+
+`generated` and `databaseSchema` are structural exceptions because they contain internal files that import each other. Any `src/services/<service-kebab>/` folder is a generic service module: files inside the same module can import each other, different modules cannot.
+
+The strict backend preset will report existing violations such as:
+
+- use-cases importing `database` or `helpers`;
+- services importing other services;
+- repositories importing other repositories, including `Setup`.
+
+These violations are intentional and should be fixed during migration.
+
+### Frontend preset relations
+
+| Layer | Can import | Same layer |
+|-------|------------|------------|
+| components | components, hooks, contexts, services, generated, utils, helpers, constants, env | yes |
+| hooks | hooks, contexts, services, generated, utils, helpers, constants, env | yes |
+| contexts | services, generated, utils, helpers, constants, env | no |
+| services | generated, utils, helpers, constants, env | no |
+| generated | — | yes |
+| utils | helpers, constants, env | no |
+| helpers | utils, constants, env | no |
+| constants | — | no |
+| env | — | no |
+| page | globals + same-page locals | yes (same page) |
+| pageComponent | globals + same-page locals (including page main) | yes |
+| pageHook | hooks/contexts/services/generated/utils/helpers/constants/env + same-page local hooks/services/contexts/helpers | yes |
+| pageService | services, generated, utils, helpers, constants, env + same-page pageHelper | no |
+| pageContext | contexts, services, generated, utils, helpers, constants, env + same-page pageService/pageHelper | no |
+| pageHelper | helpers, utils, constants, env | no |
+
+Local layers can import global layers. Global layers cannot import page-local layers. `pageHook` cannot import `pageComponent`.
+
+`utils` and `helpers` can import each other. If this creates undesirable cycles, remove one direction.
+
+### Same-layer and page scope
+
+```ts
+relations: {
+  layers: {
+    pageComponent: 'src/pages/*/components',
+    pageHook: 'src/pages/*/hooks',
+    page: 'src/pages/*',
+  },
+  scope: {
+    capture: 'page',
+    layers: ['pageComponent', 'pageHook', 'page'],
+  },
+  rules: [
+    {
+      from: 'pageComponent',
+      allow: ['pageHook'],
+      allowSameLayer: true,
+    },
+  ],
+}
+```
+
+A file from `src/pages/orders` can import another file from `src/pages/orders`, but not from `src/pages/users`.
 
 ### Type-only imports
 
@@ -638,11 +736,16 @@ Custom relation message:
 │   ├── constants/*.ts
 │   ├── contexts/*.tsx
 │   ├── env/index.ts
+│   ├── helpers/*.ts
 │   ├── hooks/*.ts
 │   ├── pages/*.tsx
 │   ├── pages/<feature-kebab>/
 │   │   ├── *.tsx, helpers.ts, schema.ts, types.ts
 │   │   ├── components/*.tsx
+│   │   ├── hooks/*.ts
+│   │   ├── services/*.ts
+│   │   ├── contexts/*.tsx
+│   │   ├── helpers/*.ts
 │   │   └── tabs/<tab-kebab>/
 │   │       ├── *.tsx
 │   │       └── <section-kebab>/
@@ -679,6 +782,12 @@ Custom relation message:
 │   ├── env/index.ts
 │   ├── helpers/*.ts
 │   ├── @types/*.d.ts
+│   ├── database/
+│   │   ├── Connection.ts
+│   │   ├── schema/index.ts, *.ts
+│   │   ├── seeds/index.ts
+│   │   └── migrations/** (ignored)
+│   ├── repositories/Setup.ts, *.ts
 │   ├── http/
 │   │   ├── Routes.ts
 │   │   ├── controllers/Health.ts
@@ -688,14 +797,18 @@ Custom relation message:
 │   │   ├── hooks/*.ts
 │   │   └── types/*.d.ts
 │   ├── services/*.ts
+│   ├── services/<service-kebab>/index.ts, *.ts
 │   ├── services/generated/** (ignored)
 │   └── use-case/
 │       ├── Errors.ts
 │       └── <feature-kebab>/
 │           ├── *.ts
 │           └── <resource-kebab>/*.ts
+├── test/*.test.ts, GlobalSetup.ts, Setup.ts, ProvidedContext.d.ts
+├── test/Helpers/*.ts
 ├── docs/** (ignored)
 ├── scripts/*.ts
+├── uploads/** (ignored)
 └── .github/**, .vscode/** (ignored)
 ```
 
@@ -821,8 +934,11 @@ files: [
 - Glob matching supports `*`, `**`, `?` and `{a,b}` only.
 - Nested roots are supported, but duplicate roots are rejected.
 - Relation layers must point to folders, not individual files.
+- Scoped layers must use patterns with a wildcard, such as `src/pages/*`.
 - TypeScript aliases in `relations` require the project `tsconfig.json`.
 - Type-only imports follow the same restrictions by default.
+- The backend preset is strict and will flag existing imports that violate AGENTS.md.
+- The frontend preset allows `utils` and `helpers` to import each other, which can create cycles.
 - ESLint versions below 9.22 are not supported.
 
 ## Rules
@@ -936,6 +1052,7 @@ export default defineConfig([
 |---------|-----------------|
 | `aiRules.configs.recommended` | bundled rules + configuration warning |
 | `aiRules.configs.projects([...])` | recommended rules + `project-structure` |
+| `projects([...])` with `preset: 'frontend' \| 'backend'` | preset structure + preset relations |
 | `projects([...])` with `structure` | structure validation |
 | `projects([...])` with `relations` | `boundaries/dependencies` |
 | `projects([...])` with both | structure + relations |
@@ -1132,6 +1249,7 @@ eslint-ai-guard/
 │   ├── structures/
 │   │   ├── buildRelationsConfig.ts
 │   │   ├── hasStructureRules.ts
+│   │   ├── mergeRelations.ts
 │   │   ├── mergeStructure.ts
 │   │   ├── validateRelations.ts
 │   │   ├── validateStructure.ts

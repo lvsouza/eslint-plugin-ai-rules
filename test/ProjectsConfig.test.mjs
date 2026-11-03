@@ -121,6 +121,40 @@ test('combines preset structure with relations', () => {
   assert.ok(projectSettings(config).relations)
 })
 
+test('merges preset relations with custom overrides', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'backend',
+      relations: {
+        layers: {
+          controller: 'src/custom-controllers',
+        },
+        rules: [
+          {
+            from: 'controller',
+            allow: ['useCase'],
+            allowSameLayer: false,
+          },
+        ],
+      },
+    },
+  ])
+
+  const relations = projectSettings(config).relations
+
+  assert.equal(relations.layers.controller, 'src/custom-controllers')
+  assert.ok(relations.layers.repository)
+
+  const controllerRule = relations.rules.find(
+    (rule) => rule.from === 'controller',
+  )
+
+  assert.deepEqual(controllerRule.allow, ['useCase'])
+  assert.equal(controllerRule.allowSameLayer, false)
+  assert.ok(relations.rules.some((rule) => rule.from === 'useCase'))
+})
+
 test('normalizes rootFolder values', () => {
   const absoluteRoot = path.resolve(process.cwd(), 'apps/web')
   const cases = [
@@ -835,10 +869,96 @@ test('validates relations declarations', () => {
     ]),
     /unknown layer "missing"/,
   )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+          },
+          rules: [
+            {
+              from: 'controller',
+              allow: [],
+              allowSameLayer: 'yes',
+            },
+          ],
+        },
+      },
+    ]),
+    /allowSameLayer.*boolean/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            controller: 'src/controllers',
+          },
+          rules: [
+            {
+              from: 'controller',
+              allow: ['controller'],
+            },
+          ],
+        },
+      },
+    ]),
+    /cannot reference its own layer/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            page: 'src/pages',
+          },
+          scope: {
+            capture: 'page',
+            layers: ['page'],
+          },
+          rules: [],
+        },
+      },
+    ]),
+    /wildcard/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        relations: {
+          layers: {
+            page: 'src/pages/*',
+          },
+          scope: {
+            capture: 'page',
+            layers: ['page'],
+          },
+          rules: [
+            {
+              from: 'pageComponent',
+              allow: ['page'],
+            },
+          ],
+        },
+      },
+    ]),
+    /unknown layer "pageComponent"/,
+  )
 })
 
 test('presets are exported', () => {
   assert.ok(presets.frontend.structure.folders.src)
   assert.ok(presets.backend.structure.folders.src)
+  assert.ok(presets.frontend.relations)
+  assert.ok(presets.backend.relations)
   assert.deepEqual(presets.other.structure, {})
 })

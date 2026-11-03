@@ -1,5 +1,198 @@
 import { commonIgnoredPaths, pascalTs, pascalTsOrTsx, pascalTsx } from './helpers'
-import type { IProjectPreset } from '../../types/structure'
+import type { IProjectPreset, IRelationsConfig } from '../../types/structure'
+
+
+const frontendRelations: IRelationsConfig = {
+  layers: {
+    pageComponent: ['src/pages/*/components', 'src/pages/*/tabs'],
+    pageHook: 'src/pages/*/hooks',
+    pageService: 'src/pages/*/services',
+    pageContext: 'src/pages/*/contexts',
+    pageHelper: 'src/pages/*/helpers',
+    page: 'src/pages/*',
+    components: 'src/components',
+    hooks: 'src/hooks',
+    contexts: 'src/contexts',
+    generated: 'src/services/generated',
+    services: 'src/services',
+    utils: 'src/utils',
+    helpers: 'src/helpers',
+    constants: 'src/constants',
+    env: 'src/env',
+  },
+  scope: {
+    capture: 'page',
+    layers: [
+      'pageComponent',
+      'pageHook',
+      'pageService',
+      'pageContext',
+      'pageHelper',
+      'page',
+    ],
+  },
+  rules: [
+    {
+      from: 'components',
+      allow: [
+        'hooks',
+        'contexts',
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+      ],
+      allowSameLayer: true,
+    },
+    {
+      from: 'hooks',
+      allow: [
+        'contexts',
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+      ],
+      allowSameLayer: true,
+    },
+    {
+      from: 'contexts',
+      allow: [
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+      ],
+      allowSameLayer: false,
+    },
+    {
+      from: 'services',
+      allow: ['generated', 'utils', 'helpers', 'constants', 'env'],
+      allowSameLayer: false,
+    },
+    {
+      from: 'generated',
+      allow: [],
+      allowSameLayer: true,
+    },
+    {
+      from: 'utils',
+      allow: ['helpers', 'constants', 'env'],
+      allowSameLayer: false,
+    },
+    {
+      from: 'helpers',
+      allow: ['utils', 'constants', 'env'],
+      allowSameLayer: false,
+    },
+    {
+      from: 'constants',
+      allow: [],
+      allowSameLayer: false,
+    },
+    {
+      from: 'env',
+      allow: [],
+      allowSameLayer: false,
+    },
+    {
+      from: 'page',
+      allow: [
+        'components',
+        'hooks',
+        'contexts',
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+        'pageComponent',
+        'pageHook',
+        'pageService',
+        'pageContext',
+        'pageHelper',
+      ],
+      allowSameLayer: true,
+    },
+    {
+      from: 'pageComponent',
+      allow: [
+        'components',
+        'hooks',
+        'contexts',
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+        'page',
+        'pageHook',
+        'pageService',
+        'pageContext',
+        'pageHelper',
+      ],
+      allowSameLayer: true,
+    },
+    {
+      from: 'pageHook',
+      allow: [
+        'hooks',
+        'contexts',
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+        'pageService',
+        'pageContext',
+        'pageHelper',
+      ],
+      allowSameLayer: true,
+    },
+    {
+      from: 'pageService',
+      allow: [
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+        'pageHelper',
+      ],
+      allowSameLayer: false,
+    },
+    {
+      from: 'pageContext',
+      allow: [
+        'contexts',
+        'services',
+        'generated',
+        'utils',
+        'helpers',
+        'constants',
+        'env',
+        'pageService',
+        'pageHelper',
+      ],
+      allowSameLayer: false,
+    },
+    {
+      from: 'pageHelper',
+      allow: ['helpers', 'utils', 'constants', 'env'],
+      allowSameLayer: false,
+    },
+  ],
+}
 
 
 export const frontendPreset: IProjectPreset = {
@@ -61,6 +254,9 @@ export const frontendPreset: IProjectPreset = {
           hooks: {
             files: [pascalTs],
           },
+          helpers: {
+            files: [pascalTs],
+          },
           pages: {
             files: [pascalTsx],
             folders: {
@@ -70,6 +266,23 @@ export const frontendPreset: IProjectPreset = {
                 folders: {
                   components: {
                     files: [pascalTsx],
+                  },
+                  hooks: {
+                    files: [pascalTs],
+                  },
+                  services: {
+                    files: [pascalTs],
+                  },
+                  contexts: {
+                    files: [
+                      {
+                        case: 'PascalCase',
+                        extensions: ['.tsx'],
+                      },
+                    ],
+                  },
+                  helpers: {
+                    files: [pascalTs],
                   },
                   tabs: {
                     folders: {
@@ -158,4 +371,5 @@ export const frontendPreset: IProjectPreset = {
       'scripts/types/**',
     ],
   },
+  relations: frontendRelations,
 }

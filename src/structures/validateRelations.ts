@@ -27,6 +27,7 @@ function validateLayerReferences(
   value: unknown,
   path: string,
   layerNames: Set<string>,
+  validateReferences: boolean,
 ): void {
   if (!Array.isArray(value)) {
     throw new Error(`Invalid relations: "${path}" must be an array.`)
@@ -35,7 +36,7 @@ function validateLayerReferences(
   value.forEach((layerName, index) => {
     assertString(layerName, `${path}[${index}]`)
 
-    if (!layerNames.has(layerName)) {
+    if (validateReferences && !layerNames.has(layerName)) {
       throw new Error(
         `Invalid relations: "${path}[${index}]" references unknown layer "${layerName}".`,
       )
@@ -45,7 +46,9 @@ function validateLayerReferences(
 
 export function validateRelations(
   value: unknown,
+  options: { validateReferences?: boolean } = {},
 ): asserts value is IRelationsConfig {
+  const validateReferences = options.validateReferences ?? true
   if (!isRecord(value)) {
     throw new Error('Invalid relations: relations must be an object.')
   }
@@ -85,7 +88,7 @@ export function validateRelations(
 
     assertString(rule.from, `${rulePath}.from`)
 
-    if (!layerNames.has(rule.from)) {
+    if (validateReferences && !layerNames.has(rule.from)) {
       throw new Error(
         `Invalid relations: "${rulePath}.from" references unknown layer "${rule.from}".`,
       )
@@ -108,8 +111,20 @@ export function validateRelations(
       )
     }
 
-    if (hasAllow) validateLayerReferences(rule.allow, `${rulePath}.allow`, layerNames)
-    if (hasDeny) validateLayerReferences(rule.deny, `${rulePath}.deny`, layerNames)
+    if (hasAllow) validateLayerReferences(rule.allow, `${rulePath}.allow`, layerNames, validateReferences)
+    if (hasDeny) validateLayerReferences(rule.deny, `${rulePath}.deny`, layerNames, validateReferences)
+
+    const layerReferences = (hasAllow ? rule.allow : rule.deny) as string[]
+
+    if (validateReferences && layerReferences.includes(rule.from)) {
+      throw new Error(
+        `Invalid relations: "${rulePath}" cannot reference its own layer; use "allowSameLayer" instead.`,
+      )
+    }
+
+    if (rule.allowSameLayer !== undefined && typeof rule.allowSameLayer !== 'boolean') {
+      throw new Error(`Invalid relations: "${rulePath}.allowSameLayer" must be a boolean.`)
+    }
 
     if (rule.allowTypeImports !== undefined && typeof rule.allowTypeImports !== 'boolean') {
       throw new Error(`Invalid relations: "${rulePath}.allowTypeImports" must be a boolean.`)
@@ -117,4 +132,51 @@ export function validateRelations(
 
     if (rule.message !== undefined) assertString(rule.message, `${rulePath}.message`)
   })
+
+  if (value.scope !== undefined) {
+    if (!isRecord(value.scope)) {
+      throw new Error('Invalid relations: "relations.scope" must be an object.')
+    }
+
+    assertString(value.scope.capture, 'relations.scope.capture')
+
+    if (!Array.isArray(value.scope.layers) || value.scope.layers.length === 0) {
+      throw new Error(
+        'Invalid relations: "relations.scope.layers" must be a non-empty array.',
+      )
+    }
+
+    const scopeLayers = new Set<string>()
+
+    value.scope.layers.forEach((layerName, index) => {
+      assertString(layerName, `relations.scope.layers[${index}]`)
+
+      if (validateReferences && !layerNames.has(layerName)) {
+        throw new Error(
+          `Invalid relations: "relations.scope.layers[${index}]" references unknown layer "${layerName}".`,
+        )
+      }
+
+      if (scopeLayers.has(layerName)) {
+        throw new Error(
+          `Invalid relations: duplicate scope layer "${layerName}".`,
+        )
+      }
+
+      scopeLayers.add(layerName)
+
+      if (!validateReferences) return
+
+      const layerPaths = Array.isArray(layers[layerName])
+        ? layers[layerName] as string[]
+        : [layers[layerName] as string]
+
+      if (!layerPaths.every((layerPath) => layerPath.includes('*'))) {
+        throw new Error(
+          `Invalid relations: scope layer "${layerName}" must use a pattern with a wildcard.`,
+        )
+      }
+    })
+
+  }
 }
