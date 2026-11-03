@@ -54,6 +54,9 @@ const repositoryStructure = {
         },
       ],
     },
+    scripts: {
+      files: [{ case: 'PascalCase', extensions: ['.mjs'] }],
+    },
     '.github': { ignore: true },
     '.vscode': { ignore: true },
   },
@@ -105,6 +108,11 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.node },
   },
   ...structureConfigs,
   ...typescriptConfigs,

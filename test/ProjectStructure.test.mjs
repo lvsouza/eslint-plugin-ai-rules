@@ -49,6 +49,63 @@ const customStructure = {
   ignoredPaths: ['ignored/**'],
 }
 
+const namedFolderStructure = {
+  folders: {
+    '[module]': {
+      name: {
+        prefix: 'feature-',
+        suffix: '-module',
+        pattern: '^feature-[a-z-]+-module$',
+      },
+      files: ['index.ts'],
+    },
+  },
+}
+
+const anyNamedFolderStructure = {
+  folders: {
+    '[anything]': {
+      files: ['index.ts'],
+    },
+  },
+}
+
+const compoundExtensionsStructure = {
+  folders: {
+    src: {
+      files: [
+        { case: 'PascalCase', extensions: ['.d.ts'] },
+        { case: 'PascalCase', extensions: ['.test.mjs'] },
+        { case: 'PascalCase', extensions: ['.spec.ts'] },
+      ],
+    },
+  },
+}
+
+const additionalFilesStructure = {
+  folders: {
+    src: {
+      files: ['index.ts'],
+      additionalFiles: [{ case: 'PascalCase', extensions: ['.ts'] }],
+    },
+  },
+}
+
+const ignoredFolderStructure = {
+  folders: {
+    ignored: { ignore: true },
+  },
+}
+
+const ignoredPathsStructure = {
+  folders: {
+    src: {
+      files: [{ case: 'PascalCase', extensions: ['.ts'] }],
+    },
+  },
+  ignoredPaths: ['ignored/**', '**/*.generated.ts'],
+}
+
 ruleTester.run('project-structure', rule, {
   valid: [
     { code: '', filename: 'src/App.tsx', settings: frontendSettings },
@@ -132,6 +189,61 @@ ruleTester.run('project-structure', rule, {
       filename: 'anything/random.ts',
       settings: settingsFor({ ignore: true }),
     },
+    {
+      code: '',
+      filename: 'feature-users-module/index.ts',
+      settings: settingsFor(namedFolderStructure),
+    },
+    {
+      code: '',
+      filename: 'whatever/index.ts',
+      settings: settingsFor(anyNamedFolderStructure),
+    },
+    {
+      code: '',
+      filename: 'src/Types.d.ts',
+      settings: settingsFor(compoundExtensionsStructure),
+    },
+    {
+      code: '',
+      filename: 'src/Imports.test.mjs',
+      settings: settingsFor(compoundExtensionsStructure),
+    },
+    {
+      code: '',
+      filename: 'src/Auth.spec.ts',
+      settings: settingsFor(compoundExtensionsStructure),
+    },
+    {
+      code: '',
+      filename: 'src/index.ts',
+      settings: settingsFor(additionalFilesStructure),
+    },
+    {
+      code: '',
+      filename: 'src/Other.ts',
+      settings: settingsFor(additionalFilesStructure),
+    },
+    {
+      code: '',
+      filename: 'ignored/anything/Bad-Name.ts',
+      settings: settingsFor(ignoredFolderStructure),
+    },
+    {
+      code: '',
+      filename: 'ignored/anything/file.txt',
+      settings: settingsFor(ignoredFolderStructure),
+    },
+    {
+      code: '',
+      filename: 'ignored/anything/Bad-Name.ts',
+      settings: settingsFor(ignoredPathsStructure),
+    },
+    {
+      code: '',
+      filename: 'src/foo.generated.ts',
+      settings: settingsFor(ignoredPathsStructure),
+    },
   ],
   invalid: [
     {
@@ -140,12 +252,7 @@ ruleTester.run('project-structure', rule, {
       settings: frontendSettings,
       errors: [
         {
-          messageId: 'folderNameMismatch',
-          data: {
-            folder: 'MyFeature',
-            parent: 'src/pages',
-            expected: 'kebab-case',
-          },
+          message: 'Folder "MyFeature" inside "src/pages" must match kebab-case.',
         },
       ],
     },
@@ -159,19 +266,34 @@ ruleTester.run('project-structure', rule, {
       code: '',
       filename: 'e2e/support/Api/AdminApi.ts',
       settings: frontendSettings,
-      errors: [{ messageId: 'folderNotAllowed' }],
+      errors: [
+        {
+          message:
+            'Folder "Api" is not allowed inside "e2e/support". Allowed folders: api.',
+        },
+      ],
     },
     {
       code: '',
       filename: 'src/services/random.ts',
       settings: frontendSettings,
-      errors: [{ messageId: 'fileNotAllowed' }],
+      errors: [
+        {
+          message:
+            'File "random.ts" is not allowed inside "src/services". Allowed files: none.',
+        },
+      ],
     },
     {
       code: '',
       filename: 'src/pages/orders/notPascal.tsx',
       settings: frontendSettings,
-      errors: [{ messageId: 'fileNameMismatch' }],
+      errors: [
+        {
+          message:
+            'File "notPascal.tsx" inside "src/pages/orders" must match PascalCase, extension .tsx.',
+        },
+      ],
     },
     {
       code: '',
@@ -229,6 +351,54 @@ ruleTester.run('project-structure', rule, {
       filename: 'root.ts',
       settings: settingsFor(customStructure),
       errors: [{ messageId: 'fileNotAllowed' }],
+    },
+    {
+      code: '',
+      filename: 'users-module/index.ts',
+      settings: settingsFor(namedFolderStructure),
+      errors: [{ messageId: 'folderNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'feature-users/index.ts',
+      settings: settingsFor(namedFolderStructure),
+      errors: [{ messageId: 'folderNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'feature-Users-module/index.ts',
+      settings: settingsFor(namedFolderStructure),
+      errors: [{ messageId: 'folderNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'src/types.d.ts',
+      settings: settingsFor(compoundExtensionsStructure),
+      errors: [{ messageId: 'fileNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'src/imports.test.mjs',
+      settings: settingsFor(compoundExtensionsStructure),
+      errors: [{ messageId: 'fileNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'src/auth.spec.ts',
+      settings: settingsFor(compoundExtensionsStructure),
+      errors: [{ messageId: 'fileNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'src/other.ts',
+      settings: settingsFor(additionalFilesStructure),
+      errors: [{ messageId: 'fileNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'src/other.ts',
+      settings: settingsFor(ignoredPathsStructure),
+      errors: [{ messageId: 'fileNameMismatch' }],
     },
   ],
 })
@@ -305,4 +475,49 @@ test('supports prefix and regex patterns in file rules', () => {
   assert.equal(lint('src/CreateUser.ts', structure).length, 0)
   assert.equal(lint('src/ReadUser.ts', structure).length, 0)
   assert.equal(lint('src/Auth.ts', structure).length, 1)
+})
+
+test('does nothing without settings', () => {
+  const messages = new Linter().verify(
+    '',
+    {
+      files: ['**/*.ts'],
+      plugins: { 'ai-rules': aiRules },
+      rules: { [ruleId]: 'error' },
+    },
+    { filename: 'src/anything.ts' },
+  )
+
+  assert.equal(messages.length, 0)
+})
+
+test('does nothing when the project has no structure', () => {
+  const messages = new Linter().verify(
+    '',
+    {
+      files: ['**/*.ts'],
+      plugins: { 'ai-rules': aiRules },
+      settings: {
+        'ai-rules': {
+          project: {
+            rootFolder: '.',
+          },
+        },
+      },
+      rules: { [ruleId]: 'error' },
+    },
+    { filename: 'src/anything.ts' },
+  )
+
+  assert.equal(messages.length, 0)
+})
+
+test('reports the full dynamic folder naming rule', () => {
+  const messages = lint('users-module/index.ts', namedFolderStructure)
+
+  assert.equal(messages.length, 1)
+  assert.equal(
+    messages[0].message,
+    'Folder "users-module" inside "." must match prefix "feature-", suffix "-module", pattern /^feature-[a-z-]+-module$/.',
+  )
 })

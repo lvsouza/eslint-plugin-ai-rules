@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import path from 'node:path'
 import { test } from 'node:test'
 
 import aiRules, { presets } from '../dist/index.js'
@@ -34,6 +35,24 @@ test('prefixes files and ignores for monorepo projects', () => {
   assert.ok(configs[0].ignores.includes('apps/web/dist/**'))
   assert.equal(projectSettings(configs[0]).rootFolder, 'apps/web')
   assert.equal(projectSettings(configs[1]).rootFolder, 'apps/api')
+})
+
+test('normalizes rootFolder values', () => {
+  const absoluteRoot = path.resolve(process.cwd(), 'apps/web')
+  const cases = [
+    { rootFolder: './apps/web/', expected: 'apps/web' },
+    { rootFolder: ' apps/web ', expected: 'apps/web' },
+    { rootFolder: absoluteRoot, expected: 'apps/web' },
+    { rootFolder: './', expected: '.' },
+  ]
+
+  for (const { rootFolder, expected } of cases) {
+    const [config] = projects([
+      { rootFolder, preset: 'other' },
+    ])
+
+    assert.equal(projectSettings(config).rootFolder, expected)
+  }
 })
 
 test('other preset does not enable structure validation', () => {
@@ -157,6 +176,125 @@ test('additionalFiles appends to preset files', () => {
   assert.deepEqual(featureNode.files[1], extraRule)
 })
 
+test('empty files replace preset files but preserve folders', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'backend',
+      structure: {
+        folders: {
+          src: {
+            files: [],
+          },
+        },
+      },
+    },
+  ])
+
+  const srcNode = projectSettings(config).structure.folders.src
+
+  assert.deepEqual(srcNode.files, [])
+  assert.ok(srcNode.folders.http)
+  assert.ok(srcNode.folders['use-case'])
+})
+
+test('files and additionalFiles are applied together', () => {
+  const extraRule = {
+    case: 'PascalCase',
+    suffix: 'Service',
+    extensions: ['.ts'],
+  }
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'backend',
+      structure: {
+        folders: {
+          src: {
+            files: ['index.ts'],
+            additionalFiles: [extraRule],
+          },
+        },
+      },
+    },
+  ])
+
+  const srcNode = projectSettings(config).structure.folders.src
+
+  assert.deepEqual(srcNode.files, ['index.ts', extraRule])
+})
+
+test('merges name rules from preset and custom structure', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'backend',
+      structure: {
+        folders: {
+          src: {
+            folders: {
+              'use-case': {
+                folders: {
+                  '[feature]': {
+                    name: {
+                      prefix: 'feature-',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  ])
+
+  const featureNode = projectSettings(config)
+    .structure.folders.src.folders['use-case'].folders['[feature]']
+
+  assert.deepEqual(featureNode.name, {
+    case: 'kebab-case',
+    prefix: 'feature-',
+  })
+  assert.ok(featureNode.folders['[resource]'])
+})
+
+test('ignore override disables a preset subtree', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'frontend',
+      structure: {
+        folders: {
+          e2e: {
+            ignore: true,
+          },
+        },
+      },
+    },
+  ])
+
+  const e2eNode = projectSettings(config).structure.folders.e2e
+
+  assert.equal(e2eNode.ignore, true)
+  assert.ok(e2eNode.folders.specs)
+})
+
+test('other preset with only ignoredPaths keeps structure rule off', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'other',
+      structure: {
+        ignoredPaths: ['tmp/**'],
+      },
+    },
+  ])
+
+  assert.equal(config.rules['ai-rules/project-structure'], 'off')
+  assert.ok(config.ignores.includes('tmp/**'))
+})
+
 test('merges ignoredPaths from preset and custom structure', () => {
   const [config] = projects([
     {
@@ -207,6 +345,16 @@ test('validates project definitions', () => {
   assert.throws(
     () => projects([{ rootFolder: '../outside', preset: 'other' }]),
     /inside the current working directory/,
+  )
+
+  assert.throws(
+    () => projects([null]),
+    /definition must be an object/,
+  )
+
+  assert.throws(
+    () => projects([{ rootFolder: 123, preset: 'other' }]),
+    /rootFolder must be a non-empty string/,
   )
 })
 
@@ -288,6 +436,76 @@ test('validates structure declarations', () => {
       },
     ]),
     /only allowed for dynamic folders/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        structure: {
+          ignoredPaths: 'tmp/**',
+        },
+      },
+    ]),
+    /ignoredPaths.*array/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        structure: {
+          ignoredPaths: [''],
+        },
+      },
+    ]),
+    /non-empty string/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        structure: {
+          folders: {
+            src: {
+              files: [{ extensions: ['ts'] }],
+            },
+          },
+        },
+      },
+    ]),
+    /must start with a dot/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        structure: {
+          folders: {
+            '[feature]': {
+              name: { prefix: '' },
+            },
+          },
+        },
+      },
+    ]),
+    /non-empty string/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        structure: {
+          folders: {
+            src: null,
+          },
+        },
+      },
+    ]),
+    /must be an object/,
   )
 })
 

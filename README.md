@@ -499,8 +499,13 @@ npm run lint -- --fix
 npm run build      # tsup -> dist/index.js + dist/index.cjs + dist/index.d.ts
 npm run dev        # tsup --watch
 npm run verify     # typecheck + test + lint + pack
-npm pack --dry-run # verify files: dist only
+npm run test:consumer # installs the packed tarball in a temp project and runs ESLint
+npm run test:package  # publint + arethetypeswrong
+npm run test:release  # consumer + package checks
+npm pack --dry-run    # verify files: dist only
 ```
+
+`test:consumer` and `test:package` are release checks and are not part of `verify`; they may use the network.
 
 ### Project structure
 
@@ -531,8 +536,10 @@ eslint-ai-guard/  # package: eslint-plugin-ai-rules
 │       ├── SortImports.ts    # also exports getSortedContent
 │       └── index.ts
 ├── test/                     # node:test suites (run against dist)
+├── scripts/
+│   └── TestConsumer.mjs      # tarball consumer smoke test
 ├── eslint/                   # deprecated original implementations
-├── eslint.config.mjs         # dogfooding: ...aiRules.configs.recommended from dist
+├── eslint.config.mjs         # dogfooding: aiRules.configs.projects from dist
 ├── tsconfig.json             # ESNext/bundler, no .js extensions
 ├── tsup.config.ts            # entry src/index.ts, format cjs+esm, dts, splitting:false
 ├── package.json              # type module, exports ., files [dist]
@@ -551,6 +558,8 @@ eslint-ai-guard/  # package: eslint-plugin-ai-rules
 ### Publishing
 
 ```bash
+npm run verify        # typecheck + test + lint + pack
+npm run test:release  # consumer smoke + publint + arethetypeswrong
 npm version patch|minor|major
 npm publish --access public  # prepublishOnly runs verify (typecheck+test+lint+pack)
 # or manually: npm run verify && npm publish --access public

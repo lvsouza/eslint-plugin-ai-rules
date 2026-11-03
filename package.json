@@ -8,14 +8,20 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "scripts": {
     "clean": "rm -rf dist",
     "prebuild": "yarn clean",
@@ -25,6 +31,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "yarn build && node --test test/*.test.mjs",
+    "test:consumer": "node scripts/TestConsumer.mjs",
+    "test:package": "npx --yes publint --pack npm && npx --yes @arethetypeswrong/cli --pack .",
+    "test:release": "yarn test:consumer && yarn test:package",
     "verify": "yarn typecheck && yarn test && yarn lint && npm pack --dry-run",
     "prepack": "yarn build",
     "prepublishOnly": "git diff --quiet || (echo '✖ uncommitted changes — commit before publishing' && exit 1) && yarn verify",
