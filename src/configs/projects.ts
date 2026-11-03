@@ -2,6 +2,7 @@ import type { Linter } from 'eslint'
 import path from 'node:path'
 
 import type { IProjectDefinition, IProjectPreset, IProjectStructure, TProjectPreset, } from '../types/structure'
+import { hasStructureRules } from '../structures/hasStructureRules'
 import { validateStructure } from '../structures/validateStructure'
 import { mergeStructure } from '../structures/mergeStructure'
 import { getPreset } from '../structures/presets'
@@ -30,16 +31,6 @@ function isSameOrInside(parent: string, child: string): boolean {
   if (parent === '.') return true
 
   return child.startsWith(`${parent}/`)
-}
-
-function hasStructureRules(structure: IProjectStructure): boolean {
-  return (
-    structure.ignore !== undefined ||
-    structure.name !== undefined ||
-    structure.files !== undefined ||
-    structure.additionalFiles !== undefined ||
-    structure.folders !== undefined
-  )
 }
 
 function validateDefinition(
@@ -142,6 +133,7 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
         'ai-rules': {
           project: {
             rootFolder: definition.rootFolder,
+            preset: definition.preset,
             structure,
           },
         },

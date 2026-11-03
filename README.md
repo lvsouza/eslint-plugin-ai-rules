@@ -5,60 +5,19 @@
 [![node >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![eslint ^9](https://img.shields.io/badge/eslint-%5E9-4B32C3)](https://eslint.org)
 
-Flat-config only ESLint plugin that bundles useful rules for AI-generated code. Ships a `recommended` preset with all rules enabled as `error` — zero config for consumers.
+Flat-config-only ESLint plugin for AI-generated code. It catches filename/import drift and enforces a project structure you declare, with ready-to-use `frontend` and `backend` presets.
 
-> **ESLint 9+ only.** Uses flat config (`eslint.config.{ts,js}`) and `eslint/config` `defineConfig`. No legacy `.eslintrc` support.
+> **ESLint 9+ only.** Uses flat config (`eslint.config.{js,mjs,ts}`). No legacy `.eslintrc` support.
 
-## Features
+## Quick start
 
-- **AI Rules rules** — catches typical AI drift: wrong filename casing, unsorted/multiline imports, project structure drift
-- **Project presets** — `frontend`, `backend` and `other` presets with folder/file structure rules
-- **Custom structure** — declarative object to define folder hierarchy, folder/file casing, prefixes, suffixes and regex patterns
-- **Bundled preset** — `aiRules.configs.recommended` enables custom + `import-x`, `@stylistic`, `typescript-eslint` rules out of the box
-- **Autofix** — `sort-imports` and `no-multiline-imports` are `fixable: code` (`eslint --fix`)
-- **Dual build** — `dist/index.js` (ESM) + `dist/index.cjs` (CJS) via `tsup`, single-file bundle, `type: module`
-
-## Requirements
-
-- Node `>=18` (`package.json` `engines`)
-- ESLint `^9.0.0` (peer) — flat config only
-- TypeScript `>=5.0.0` (peer)
-
-`@eslint/js`, `eslint-plugin-import-x`, `@stylistic/eslint-plugin`, `typescript-eslint`, `globals` are already `dependencies` — you don't need to install them.
-
-## Installation
+Install:
 
 ```bash
-# npm
 npm i -D eslint-plugin-ai-rules eslint typescript
-
-# yarn
-yarn add -D eslint-plugin-ai-rules eslint typescript
-
-# pnpm
-pnpm add -D eslint-plugin-ai-rules eslint typescript
-
-# bun
-bun add -d eslint-plugin-ai-rules eslint typescript
 ```
 
-## Quick Start
-
-### `eslint.config.ts` (recommended) — you define `files`
-
-`recommended` is file-agnostic (only `plugins` + `settings` + `rules`) and does **not** configure a parser. Pair it with `typescript-eslint` (or `@typescript-eslint/parser`) and define `files`:
-
-```ts
-import aiRules from 'eslint-plugin-ai-rules'
-import tseslint from 'typescript-eslint'
-
-export default [
-  ...tseslint.configs.recommended,
-  { files: ['**/*.{ts,tsx}'], ...aiRules.configs.recommended[0] },
-]
-```
-
-Alternative with `defineConfig` (ESLint >= 9.22):
+Configure the project structure and let the plugin apply its recommended rules:
 
 ```ts
 import { defineConfig } from 'eslint/config'
@@ -67,43 +26,32 @@ import tseslint from 'typescript-eslint'
 
 export default defineConfig([
   ...tseslint.configs.recommended,
-  { files: ['**/*.{ts,tsx}'], extends: aiRules.configs.recommended },
+  ...aiRules.configs.projects([
+    { rootFolder: '.', preset: 'frontend' },
+  ]),
 ])
 ```
 
-### `eslint.config.js` / `eslint.config.mjs`
-
-```js
-import aiRules from 'eslint-plugin-ai-rules'
-import tseslint from 'typescript-eslint'
-
-export default [
-  ...tseslint.configs.recommended,
-  { files: ['**/*.{js,ts,tsx}'], ...aiRules.configs.recommended[0] },
-]
-```
-
-### With overrides
+Monorepo with frontend and backend:
 
 ```ts
-import aiRules from 'eslint-plugin-ai-rules'
-import { defineConfig } from 'eslint/config'
-
 export default defineConfig([
-  { files: ['**/*.{ts,tsx}'], ...aiRules.configs.recommended[0] },
-  {
-    // turn off filename check for tests or generated code
-    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', 'scripts/**/*'],
-    rules: {
-      'ai-rules/filename-pascal-case': 'off',
-    },
-  },
-  {
-    // or disable a bundled rule
-    rules: {
-      '@stylistic/semi': 'off',
-    },
-  },
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    { rootFolder: 'apps/web', preset: 'frontend' },
+    { rootFolder: 'apps/api', preset: 'backend' },
+  ]),
+])
+```
+
+Project that is neither frontend nor backend:
+
+```ts
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    { rootFolder: '.', preset: 'other' },
+  ]),
 ])
 ```
 
@@ -111,40 +59,142 @@ Run:
 
 ```bash
 npx eslint .
-npx eslint --fix .   # autofix for sort-imports / no-multiline-imports
+npx eslint --fix .
 ```
+
+## Contents
+
+- [Configuration warning](#configuration-warning)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Project structure](#project-structure)
+- [Examples](#examples)
+- [Preset reference](#preset-reference)
+- [Structure DSL](#structure-dsl)
+- [Rules](#rules)
+- [Recommended preset](#recommended-preset)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Publishing](#publishing)
+- [Legacy](#legacy)
+
+## Configuration warning
+
+If you install the plugin and use `aiRules.configs.recommended` without configuring the project structure, the plugin prints a warning the first time it lints a file:
+
+```text
+[eslint-plugin-ai-rules] Project structure validation is not configured.
+Configure it with aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' | 'backend' }]).
+If this project is not a frontend/backend, use preset: 'other' to disable this warning.
+```
+
+The warning exists only to make sure the new structure rules are actually configured. It is printed once per process.
+
+It disappears when you provide a valid configuration:
+
+- `preset: 'frontend'`
+- `preset: 'backend'`
+- `preset: 'other'`
+- a custom non-empty `structure`
+
+A project containing only `rootFolder` and an empty `structure` is still considered unconfigured and will warn.
+
+## Features
+
+- **Project structure validation** — folder hierarchy, dynamic folders, folder/file casing, prefixes, suffixes and regex patterns.
+- **Frontend/backend presets** — ready-to-use structures based on real projects.
+- **Custom structure** — declare exactly how your project must be organized.
+- **Monorepo friendly** — one `rootFolder` per project root.
+- **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
+- **Bundled rules** — ships with useful `import-x`, `@stylistic` and `@typescript-eslint` rules.
+- **ESM + CJS** — `dist/index.js` and `dist/index.cjs`, with correct type declarations for both.
+
+## Requirements
+
+- Node `>=18`
+- ESLint `^9.0.0`
+- TypeScript `>=5.0.0`
+
+Dependencies such as `@eslint/js`, `eslint-plugin-import-x`, `@stylistic/eslint-plugin`, `typescript-eslint` and `globals` are already bundled as dependencies. You do not need to install them separately.
 
 ## Project structure
 
-`aiRules.configs.projects([...])` creates one flat config per project root and enables `ai-rules/project-structure` with the resolved structure. `rootFolder` is the project root (the folder containing `package.json`), which makes frontend/backend in the same repository work.
+Each project definition has this shape:
 
 ```ts
-import aiRules from 'eslint-plugin-ai-rules'
+interface IProjectDefinition {
+  rootFolder: string
+  preset?: 'frontend' | 'backend' | 'other'
+  structure?: IProjectStructure
+}
+```
+
+- `rootFolder` is the project root, usually the folder containing `package.json`.
+- `rootFolder` is relative to the current working directory.
+- Absolute paths inside the current working directory are also accepted.
+- Projects cannot have overlapping roots.
+- `preset` provides a base structure.
+- `structure` is merged on top of the preset.
+- `preset: 'other'` disables structure validation unless a custom `structure` is provided.
+
+`aiRules.configs.projects([...])` generates one flat config per project. Each config:
+
+- scopes `files` to the project root;
+- sets `settings['ai-rules'].project`;
+- enables `ai-rules/project-structure`;
+- adds `ignores` from `ignoredPaths`;
+- includes the recommended rules;
+- disables `ai-rules/filename-pascal-case`, because file naming is handled by `project-structure`.
+
+## Examples
+
+### Frontend only
+
+```ts
 import { defineConfig } from 'eslint/config'
+import aiRules from 'eslint-plugin-ai-rules'
+import tseslint from 'typescript-eslint'
 
 export default defineConfig([
+  ...tseslint.configs.recommended,
   ...aiRules.configs.projects([
-    { rootFolder: 'apps/frontend', preset: 'frontend' },
-    { rootFolder: 'apps/backend', preset: 'backend' },
+    { rootFolder: '.', preset: 'frontend' },
   ]),
 ])
 ```
 
-- `preset`: `frontend`, `backend` or `other`
-- `structure`: optional custom structure merged on top of the preset
-- `preset: 'other'` disables structure validation unless `structure` is provided
-- Without `preset`/`structure`, only the recommended rules are scoped to the root
+### Frontend and backend in the same repository
 
-The generated config also:
+```ts
+import { defineConfig } from 'eslint/config'
+import aiRules from 'eslint-plugin-ai-rules'
+import tseslint from 'typescript-eslint'
 
-- scopes `files` to the project root;
-- adds `ignores` from the resolved `ignoredPaths`;
-- disables `ai-rules/filename-pascal-case` when a structure is active, since file naming is handled by `project-structure`.
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    { rootFolder: 'packages/web', preset: 'frontend' },
+    { rootFolder: 'packages/api', preset: 'backend' },
+  ]),
+])
+```
+
+### Opting out with `other`
+
+```ts
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    { rootFolder: '.', preset: 'other' },
+  ]),
+])
+```
 
 ### Custom structure
 
 ```ts
 export default defineConfig([
+  ...tseslint.configs.recommended,
   ...aiRules.configs.projects([
     {
       rootFolder: 'apps/api',
@@ -175,26 +225,263 @@ export default defineConfig([
 ])
 ```
 
-### Structure DSL
+### Use case with a suffix
 
 ```ts
+structure: {
+  folders: {
+    src: {
+      folders: {
+        'use-case': {
+          folders: {
+            '[feature]': {
+              files: [
+                {
+                  case: 'PascalCase',
+                  suffix: 'UseCase',
+                  extensions: ['.ts'],
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  },
+}
+```
+
+### Controller with a suffix
+
+```ts
+structure: {
+  folders: {
+    src: {
+      folders: {
+        http: {
+          folders: {
+            controllers: {
+              folders: {
+                '[feature]': {
+                  files: [
+                    {
+                      case: 'PascalCase',
+                      suffix: 'Controller',
+                      extensions: ['.ts'],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}
+```
+
+### Dynamic folder with prefix, suffix and regex
+
+```ts
+structure: {
+  folders: {
+    '[module]': {
+      name: {
+        prefix: 'feature-',
+        suffix: '-module',
+        pattern: '^feature-[a-z-]+-module$',
+      },
+      files: ['index.ts'],
+    },
+  },
+}
+```
+
+Valid: `feature-users-module/index.ts`.
+
+Invalid: `users-module/index.ts`, `feature-users/index.ts`, `feature-Users-module/index.ts`.
+
+### Adding files to a preset
+
+```ts
+structure: {
+  folders: {
+    src: {
+      additionalFiles: [
+        { case: 'PascalCase', suffix: 'Service', extensions: ['.ts'] },
+      ],
+    },
+  },
+}
+```
+
+### Replacing preset files
+
+```ts
+structure: {
+  folders: {
+    src: {
+      files: ['index.ts'],
+    },
+  },
+}
+```
+
+### Ignoring a preset subtree
+
+```ts
+structure: {
+  folders: {
+    e2e: { ignore: true },
+  },
+}
+```
+
+### Ignoring paths globally
+
+```ts
+structure: {
+  ignoredPaths: ['dist/**', 'coverage/**', 'src/services/generated/**'],
+}
+```
+
+### Manual settings without the factory
+
+Advanced users can configure the rule directly:
+
+```ts
+import { plugin } from 'eslint-plugin-ai-rules'
+
+export default [
+  {
+    files: ['src/**/*.ts'],
+    plugins: { 'ai-rules': plugin },
+    settings: {
+      'ai-rules': {
+        project: {
+          rootFolder: '.',
+          preset: 'other',
+          structure: {
+            folders: {
+              src: {
+                files: [{ case: 'PascalCase', extensions: ['.ts'] }],
+              },
+            },
+          },
+        },
+      },
+    },
+    rules: {
+      'ai-rules/project-structure': 'error',
+    },
+  },
+]
+```
+
+Multiple projects can be passed directly through `settings['ai-rules'].projects`. The rule chooses the most specific root for each file.
+
+## Preset reference
+
+### Frontend
+
+```text
+<root>/
+├── root files: package.json, lockfiles, *.config.{js,mjs,cjs,ts},
+│   tsconfig*.json, .env*, Dockerfile, entrypoint.sh, nginx.conf,
+│   index.html, AGENTS.md, README.md, LICENSE
+├── src/
+│   ├── App.tsx, AppRoutes.tsx, main.tsx, index.css, vite-env.d.ts
+│   ├── components/*.tsx
+│   ├── components/ui/*.{ts,tsx}
+│   ├── constants/*.ts
+│   ├── contexts/*.tsx
+│   ├── env/index.ts
+│   ├── hooks/*.ts
+│   ├── pages/*.tsx
+│   ├── pages/<feature-kebab>/
+│   │   ├── *.tsx, helpers.ts, schema.ts, types.ts
+│   │   ├── components/*.tsx
+│   │   └── tabs/<tab-kebab>/
+│   │       ├── *.tsx
+│   │       └── <section-kebab>/
+│   │           ├── *.tsx, *.ts
+│   │           ├── components/*.tsx
+│   │           └── contents/
+│   │               ├── *.tsx
+│   │               └── components/*.tsx
+│   ├── services/generated/** (ignored)
+│   ├── services/utils/*.ts
+│   └── utils/*.ts
+├── e2e/
+│   ├── .auth/** (ignored)
+│   ├── fixtures/*
+│   ├── pages/*.ts
+│   ├── specs/*.spec.ts
+│   └── support/*.ts
+│       └── api/*.ts
+├── scripts/*.ts
+├── scripts/types/** (ignored)
+├── public/** (ignored)
+└── .github/**, .vscode/** (ignored)
+```
+
+### Backend
+
+```text
+<root>/
+├── root files: package.json, lockfiles, *.config.{js,mjs,cjs,ts},
+│   tsconfig*.json, .env*, Dockerfile, .dockerignore,
+│   AGENTS.md, README.md, LICENSE
+├── src/
+│   ├── index.ts, Server.ts, Schemas.ts
+│   ├── env/index.ts
+│   ├── helpers/*.ts
+│   ├── @types/*.d.ts
+│   ├── http/
+│   │   ├── Routes.ts
+│   │   ├── controllers/Health.ts
+│   │   ├── controllers/<feature-kebab>/
+│   │   │   ├── *.ts
+│   │   │   └── <resource-kebab>/*.ts
+│   │   ├── hooks/*.ts
+│   │   └── types/*.d.ts
+│   ├── services/*.ts
+│   ├── services/generated/** (ignored)
+│   └── use-case/
+│       ├── Errors.ts
+│       └── <feature-kebab>/
+│           ├── *.ts
+│           └── <resource-kebab>/*.ts
+├── docs/** (ignored)
+├── scripts/*.ts
+└── .github/**, .vscode/** (ignored)
+```
+
+### Other
+
+`preset: 'other'` has an empty structure. It disables validation and suppresses the configuration warning. If you provide a `structure`, it validates exactly what you declared.
+
+## Structure DSL
+
+```ts
+type TProjectPreset = 'frontend' | 'backend' | 'other'
+
+type TNameCase = 'PascalCase' | 'camelCase' | 'kebab-case' | 'snake_case'
+
+interface INameRule {
+  case?: TNameCase
+  prefix?: string
+  suffix?: string
+  pattern?: string
+}
+
 type TFileRule =
-  | string // exact name or glob: 'index.ts', '*.spec.ts'
-  | ({
-      extensions: string[]
-      case?: 'PascalCase' | 'camelCase' | 'kebab-case' | 'snake_case'
-      prefix?: string
-      suffix?: string
-      pattern?: string // regex applied to the base name
-    })
+  | string
+  | ({ extensions: string[] } & INameRule)
 
 interface IStructureNode {
-  name?: {
-    case?: 'PascalCase' | 'camelCase' | 'kebab-case' | 'snake_case'
-    prefix?: string
-    suffix?: string
-    pattern?: string
-  }
+  name?: INameRule
   files?: TFileRule[]
   additionalFiles?: TFileRule[]
   folders?: Record<string, IStructureNode>
@@ -206,16 +493,76 @@ interface IProjectStructure extends IStructureNode {
 }
 ```
 
-- Folder keys are literal (`components`) or dynamic (`[feature]`).
-- Only one dynamic folder key is allowed per level.
-- `name` is applied to dynamic folders.
-- String file rules match the full filename with `*`, `**`, `?` and `{a,b}`.
-- Object file rules match `extensions`, then validate `case`/`prefix`/`suffix`/`pattern` against the base name.
-- A file is valid when it matches at least one rule completely.
-- `ignore: true` skips the subtree during structure validation.
-- `ignoredPaths` is applied before the tree walk and also becomes an ESLint `ignores` entry.
+### Folder keys
 
-### Merge: preset + structure
+Literal keys match exactly:
+
+```ts
+folders: {
+  components: { files: ['*.tsx'] },
+}
+```
+
+Dynamic keys use brackets:
+
+```ts
+folders: {
+  '[feature]': {
+    name: { case: 'kebab-case' },
+    files: ['*.tsx'],
+  },
+}
+```
+
+- Only one dynamic folder is allowed per level.
+- `name` applies to dynamic folders.
+- A static folder key cannot have a `name` rule.
+- A dynamic folder without `name` accepts any folder name.
+
+### File rules
+
+Strings match exact names or globs:
+
+```ts
+files: [
+  'index.ts',
+  '*.spec.ts',
+  '*.config.{js,mjs,cjs,ts}',
+]
+```
+
+Supported glob syntax: `*`, `**`, `?` and `{a,b}`.
+
+Object rules require `extensions` and validate the base name:
+
+```ts
+files: [
+  {
+    extensions: ['.ts', '.tsx'],
+    case: 'PascalCase',
+  },
+  {
+    extensions: ['.ts'],
+    case: 'PascalCase',
+    suffix: 'UseCase',
+  },
+  {
+    extensions: ['.ts'],
+    case: 'PascalCase',
+    prefix: 'Use',
+  },
+  {
+    extensions: ['.ts'],
+    pattern: '^(Create|Read|Update|Delete|List)[A-Z][A-Za-z0-9]*$',
+  },
+]
+```
+
+- `extensions` also supports compound extensions: `.d.ts`, `.test.mjs`, `.spec.ts`.
+- `case`, `prefix`, `suffix` and `pattern` apply to the base name after removing the extension.
+- A file is valid when it matches at least one rule completely.
+
+### Merge behavior
 
 | Field | Behavior |
 |-------|----------|
@@ -226,173 +573,36 @@ interface IProjectStructure extends IStructureNode {
 | `ignore` | overrides the preset |
 | `ignoredPaths` | union of preset and custom paths |
 
-To disable a preset subtree without removing it:
-
-```ts
-structure: {
-  folders: {
-    e2e: { ignore: true },
-  },
-}
-```
-
-### Presets
-
-`frontend` and `backend` encode the reference structures used by this plugin:
-
-- root files and folders;
-- `src` hierarchy;
-- `e2e` (frontend), `scripts`, `public`, `docs`;
-- dynamic folders in kebab-case;
-- PascalCase files with explicit exceptions;
-- generated folders ignored.
-
-Presets are exported for inspection:
-
-```ts
-import { presets } from 'eslint-plugin-ai-rules'
-
-console.log(presets.frontend.structure)
-```
-
-> The backend preset enforces kebab-case for dynamic folders. Existing folders such as `Image` and `StockMovement` are reported and should become `image` and `stock-movement`. Use a custom `structure` with `ignore: true` during migration if needed.
-
-## Configuration
-
-### `recommended` preset
-
-`src/configs/recommended.ts` exports `defineConfig([...])` with **only** `plugins` + `settings` + `rules` (file-agnostic) — you define `files`/`ignores`/`languageOptions`:
-
-- `plugins: { '@stylistic': stylistic, 'import-x': importX, 'ai-rules': plugin }`
-- `settings: { 'import-x/resolver-next': ... }` with `extensions: ['.ts','.tsx','.d.ts','.js','.jsx']`
-- Rules (all `error` unless noted):
-
-| Rule | Default | Notes |
-|------|---------|-------|
-| `ai-rules/filename-pascal-case` | `error` | File-agnostic: checks every file ESLint lints. See below |
-| `ai-rules/project-structure` | `off` | Opt-in via `aiRules.configs.projects(...)` |
-| `ai-rules/sort-imports` | `error` | Groups + length desc, collapses multiline |
-| `ai-rules/no-multiline-imports` | `error` | Single-line imports |
-| `import-x/no-duplicates` | `error` |  |
-| `import-x/no-default-export` | `off` |  |
-| `max-len` | `off` |  |
-| `@stylistic/semi` | `['error','never']` | No semicolons |
-| `@typescript-eslint/consistent-type-imports` | `['error',{prefer:'type-imports'}]` |  |
-| `@typescript-eslint/no-unused-vars` | `['error',{argsIgnorePattern:'^_',varsIgnorePattern:'^_'}]` |  |
-| `@typescript-eslint/naming-convention` | `['error', {interface:'PascalCase' prefix I}, {typeAlias:'PascalCase' prefix T}]` | Disable per-project for `**/*.d.ts` via your own override if needed |
-
-`recommended` has no `files`/`ignores` — add them in your `eslint.config.*` (see Quick Start). This repo's `eslint.config.mjs` adds `globalIgnores`, `files: ['**/*.{ts,tsx}']` with `extends: [js.configs.recommended, tseslint.configs.recommended]` + `globals.browser` locally.
-
-### Custom setup (without `recommended`)
-
-```ts
-import { plugin } from 'eslint-plugin-ai-rules'
-import { defineConfig } from 'eslint/config'
-
-export default defineConfig([
-  {
-    files: ['**/*.{ts,tsx}'],
-    plugins: { 'ai-rules': plugin },
-    rules: {
-      'ai-rules/sort-imports': 'error',
-      'ai-rules/no-multiline-imports': 'warn',
-      'ai-rules/filename-pascal-case': 'off',
-    },
-  },
-])
-```
-
-You can also import rules individually:
-
-```ts
-import { filenamePascalCase, sortImports, noMultilineImports } from 'eslint-plugin-ai-rules'
-```
-
 ## Rules
-
-Brief overview. See source in `src/rules/` for full logic.
 
 ### `ai-rules/project-structure`
 
-Validates the folder hierarchy, folder names and file names against the structure configured in `settings['ai-rules']`.
+Validates the configured hierarchy, folder names and file names.
 
-- **Type:** `problem`, no autofix
-- **Reads:** `settings['ai-rules'].project` or `settings['ai-rules'].projects`
-- **Enabled by:** `aiRules.configs.projects(...)`
-- **Ignores:** files outside the project root, `ignoredPaths`, and `ignore: true` subtrees
-- **Messages:** `folderNotAllowed`, `folderNameMismatch`, `fileNotAllowed`, `fileNameMismatch`
+- Type: `problem`
+- No autofix
+- Reads `settings['ai-rules'].project` or `settings['ai-rules'].projects`
+- Messages: `folderNotAllowed`, `folderNameMismatch`, `fileNotAllowed`, `fileNameMismatch`
+- Ignores files outside the project root, `ignoredPaths` and `ignore: true` subtrees
 
-```ts
-import { defineConfig } from 'eslint/config'
+### `ai-rules/project-setup`
 
-export default defineConfig([
-  {
-    files: ['**/*.{ts,tsx}'],
-    plugins: { 'ai-rules': plugin },
-    settings: {
-      'ai-rules': {
-        project: {
-          rootFolder: 'apps/api',
-          structure: {
-            files: ['index.ts'],
-            folders: {
-              src: {
-                folders: {
-                  '[module]': {
-                    name: { case: 'kebab-case' },
-                    files: [
-                      {
-                        case: 'PascalCase',
-                        suffix: 'UseCase',
-                        extensions: ['.ts'],
-                      },
-                    ],
-                  },
-                },
-              },
-            },
-            ignoredPaths: ['dist/**'],
-          },
-        },
-      },
-    },
-    rules: {
-      'ai-rules/project-structure': 'error',
-    },
-  },
-])
-```
+Prints the configuration warning described above.
 
-For monorepos without the factory, pass multiple projects and the rule picks the most specific root:
-
-```ts
-settings: {
-  'ai-rules': {
-    projects: [
-      { rootFolder: 'apps/web', structure: frontendStructure },
-      { rootFolder: 'apps/api', structure: backendStructure },
-    ],
-  },
-}
-```
+- Type: `suggestion`
+- Enabled as `warn` in `recommended`
+- Does not report lint messages
+- Warns once per process
+- Suppressed by `preset: 'other'`, `frontend`, `backend` or a non-empty custom structure
 
 ### `ai-rules/filename-pascal-case`
 
-Enforces `PascalCase` for file names. The rule is file-agnostic: it validates every file ESLint decides to lint, following the flat-config `files`/`ignores` defined in the consumer's config (same pattern as other filename rules).
+Enforces PascalCase for file names.
 
-- **Type:** `suggestion`, no autofix, `messageId: invalid`
-- **Ignores:** `index.{ts,tsx,js,jsx}`, `*.d.ts`, `*.css`, dotfiles
-- **Checks:** `path.basename` from `getPhysicalFilename()` / `context.filename`, `^[A-Z][a-zA-Z0-9]*$`, `kebab/snake -> PascalCase` conversion
-- **Options:**
-  - `ignore` — array of regex strings matched against the basename and the path relative to `cwd` (same idea as `unicorn/filename-case`). Use it for tool-mandated names like `*.config.*`, tests/specs, generated or vendored code.
-  - `ignoreMiddleExtensions` — `boolean`, default `true`. When `true`, only the base name before the first dot is validated, so `ValidationRanges.test.ts` is valid and `my-component.test.ts` is renamed to `MyComponent.test.ts`. When `false`, every dot-separated segment must be PascalCase, so `ValidationRanges.test.ts` is renamed to `ValidationRanges.Test.ts` (same idea as `unicorn/filename-case`).
-
-```ts
-// my-component.ts         ❌  Rename to "MyComponent.ts"
-// ValidationRanges.test.ts  ✅ (ignoreMiddleExtensions: true, default)
-// ValidationRanges.test.ts  ❌  Rename to "ValidationRanges.Test.ts" (ignoreMiddleExtensions: false)
-// MyComponent.ts          ✅
-```
+- Ignores `index.{ts,tsx,js,jsx}`, `*.d.ts`, `*.css` and dotfiles.
+- Options:
+  - `ignore`: regex strings matched against the basename and relative path.
+  - `ignoreMiddleExtensions`: defaults to `true`, so `ValidationRanges.test.ts` is valid.
 
 ```ts
 'ai-rules/filename-pascal-case': [
@@ -404,86 +614,150 @@ Enforces `PascalCase` for file names. The rule is file-agnostic: it validates ev
 ]
 ```
 
-To scope or disable it, use your own config (as this repo does in `eslint.config.mjs`):
-
-```ts
-import { defineConfig } from 'eslint/config'
-import { recommended } from './src/configs/recommended'
-
-export default defineConfig([
-  ...recommended,
-  { files: ['src/**/*'], rules: { 'ai-rules/filename-pascal-case': 'off' } },
-])
-```
+`projects()` disables this rule because `project-structure` enforces file names.
 
 ### `ai-rules/no-multiline-imports`
 
-Disallows multiline `ImportDeclaration`.
-
-- **Type:** `layout`, `fixable: code`, `messageId: multilineImport`
-- **Fix:** collapses `{`, `}`, `,` and whitespace to single line: `import { b, a } from 'lodash'`
+Disallows multiline import declarations. Fixable.
 
 ```ts
-// ❌
+// before
 import {
   b,
-  a
+  a,
 } from 'lodash'
 
-// ✅ after --fix
+// after --fix
 import { b, a } from 'lodash'
 ```
 
-Note: `ai-rules/sort-imports` also collapses multiline; both fixers may run, but `sort-imports` handles the full `Program` sort.
-
 ### `ai-rules/sort-imports`
 
-Sorts imports by group and line-length descending, collapsing multiline imports.
+Sorts imports by group and line length descending, collapsing multiline imports. Fixable.
 
-- **Type:** `layout`, `fixable: code` (`Program` fixer), `messageId: sortRequired`
-- **Groups (in order, each separated by one blank line):**
-  1. Directives (`'use client'`, `'use server'`, `'use strict'`)
-  2. External (`react` first, then other externals sorted by `line.length` desc → `localeCompare`)
-  3. Internal (`.`, `@/` sorted same)
-  4. Re-exports (`export { ... } from`, `export * from` sorted same)
-- **Rest:** code after imports, joined with `\n\n\n` (two blank lines between imports and code)
-- **Directives:** preserved at top while `canAcceptDirectives` is true
+Groups:
+
+1. Directives (`'use client'`, `'use server'`, `'use strict'`)
+2. External packages (`react` first, then by line length desc)
+3. Internal imports (`.`, `@/`)
+4. Re-exports
+
+## Bundled rules from other plugins
+
+`recommended` also registers and applies these rules. They existed before project structure support and remain part of the default setup.
+
+| Rule | Default | Purpose |
+|------|---------|---------|
+| `import-x/no-duplicates` | `error` | Prevent importing the same module twice |
+| `import-x/no-default-export` | `off` | Default exports are allowed |
+| `max-len` | `off` | No line length limit |
+| `@stylistic/semi` | `['error', 'never']` | No semicolons |
+| `@typescript-eslint/consistent-type-imports` | `['error', { prefer: 'type-imports' }]` | Prefer `import type` |
+| `@typescript-eslint/no-unused-vars` | `['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]` | Ignore unused values prefixed with `_` |
+| `@typescript-eslint/naming-convention` | interfaces `I` prefix, type aliases `T` prefix | Enforce `IUser` and `TUser` style |
+
+The plugin also configures the `import-x` resolver with:
 
 ```ts
-// ❌ before --fix
-import { local } from './local'
-import { a } from 'lodash'
-import React from 'react'
-
-// ✅ after --fix
-import React from 'react'
-import { a } from 'lodash'
-
-import { local } from './local'
+extensions: ['.ts', '.tsx', '.d.ts', '.js', '.jsx']
 ```
 
-Supports side-effect `import 'polyfill'`, `import type`, `export * from`, `export { ... } from`.
+Override any bundled rule after the preset:
 
-## TypeScript
+```ts
+export default defineConfig([
+  ...aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' }]),
+  {
+    rules: {
+      '@stylistic/semi': ['error', 'always'],
+      'import-x/no-default-export': 'off',
+    },
+  },
+])
+```
 
-Plugin itself uses `module: ESNext` + `moduleResolution: bundler` (`tsconfig.json`) and **no `.js` extensions** in source imports (e.g., `from './plugin'`). Output is bundled to single `dist/index.js` via `tsup`, so consumers don't need to handle internal paths. For your project, any TS config works; the preset sets `languageOptions.globals: globals.browser` and `import-x/resolver-next`.
+## Recommended preset
+
+`aiRules.configs.recommended` is file-agnostic. It provides:
+
+- plugins: `@stylistic`, `import-x`, `@typescript-eslint`, `ai-rules`
+- `settings['import-x/resolver-next']`
+- the rule set documented above
+
+It does **not** configure:
+
+- `files`
+- `ignores`
+- parser
+- language options
+- globals
+
+Pair it with `typescript-eslint` or `@typescript-eslint/parser` and define `files` in your config. `aiRules.configs.projects([...])` already does the file scoping for you.
+
+If you want the recommended rules without project structure validation, use `projects([{ rootFolder: '.', preset: 'other' }])`.
 
 ## Troubleshooting
 
-**Missing `dist` before lint (repo uses `eslint.config.mjs` → `dist`)**
+### The configuration warning keeps appearing
+
+Use a valid project configuration:
+
+```ts
+...aiRules.configs.projects([
+  { rootFolder: '.', preset: 'frontend' },
+])
 ```
-Error: Cannot find module './dist/index.js'
+
+Or explicitly opt out:
+
+```ts
+...aiRules.configs.projects([
+  { rootFolder: '.', preset: 'other' },
+])
 ```
-Fix: `npm run build` first. This repo's `eslint.config.mjs` imports from `dist` (no `jiti`), so `prelint` runs `build` automatically (`package.json` `prelint`).
 
-**File ignored because outside of base path**
-You passed an absolute path outside the config's `basePath`. Run `npx eslint .` from project root or use `npx eslint --no-config-lookup -c ./eslint.config.js ./src/file.ts` with correct cwd.
+A project with only `rootFolder` and an empty `structure` still warns.
 
-**Flat config only**
-This plugin exports flat config arrays. It does not support legacy `.eslintrc`. Use `eslint.config.{js,ts}`.
+### `project-structure` is not running
 
-**Filename rule too strict for tests/configs**
-The rule checks every linted file. Test/spec files with a PascalCase base (e.g. `ValidationRanges.test.ts`) pass by default via `ignoreMiddleExtensions: true`. For tool-mandated names like `*.config.*`, generated or vendored code, pass the `ignore` option (`{ ignore: ['\\.config\\.', '^generated/'] }`) or disable `ai-rules/filename-pascal-case` for those files via an override (see Quick Start).
+Make sure you are using `aiRules.configs.projects([...])` or manually setting `settings['ai-rules'].project` and enabling `ai-rules/project-structure`.
+
+### Type-aware rule error
+
+`@typescript-eslint/consistent-type-imports` needs the TypeScript parser. Pair the plugin with:
+
+```ts
+...tseslint.configs.recommended
+```
+
+### Missing `dist` before lint
+
+This repository imports the local build from `dist`. Consumers should import the published package:
+
+```ts
+import aiRules from 'eslint-plugin-ai-rules'
+```
+
+### File ignored because outside of base path
+
+Run ESLint from the project root, or configure the correct `basePath`.
+
+### Flat config only
+
+This plugin exports flat config arrays. It does not support legacy `.eslintrc`.
+
+### Filename rule too strict
+
+Use the `ignore` option or disable `ai-rules/filename-pascal-case` for tool-mandated files:
+
+```ts
+{
+  files: ['*.config.*', 'scripts/**/*'],
+  rules: {
+    'ai-rules/filename-pascal-case': 'off',
+  },
+}
+```
 
 ## Development
 
@@ -492,82 +766,86 @@ git clone <repo>
 cd eslint-ai-guard
 npm install
 
-npm run typecheck  # tsc --noEmit
-npm test           # node:test + dist build
-npm run lint       # eslint .
+npm run typecheck      # tsc --noEmit
+npm test               # node:test against dist
+npm run lint           # eslint .
 npm run lint -- --fix
-npm run build      # tsup -> dist/index.js + dist/index.cjs + dist/index.d.ts
-npm run dev        # tsup --watch
-npm run verify     # typecheck + test + lint + pack
-npm run test:consumer # installs the packed tarball in a temp project and runs ESLint
-npm run test:package  # publint + arethetypeswrong
-npm run test:release  # consumer + package checks
-npm pack --dry-run    # verify files: dist only
+npm run build          # tsup -> ESM + CJS + declarations
+npm run dev            # tsup --watch
+npm run verify         # typecheck + test + lint + pack
+npm run test:consumer  # install packed tarball in a temp project
+npm run test:package   # publint + arethetypeswrong
+npm run test:release   # consumer + package checks
+npm pack --dry-run     # verify published files
 ```
 
-`test:consumer` and `test:package` are release checks and are not part of `verify`; they may use the network.
+`test:consumer` and `test:package` are release checks and are not part of `verify`. They may use the network.
 
 ### Project structure
 
-```
-eslint-ai-guard/  # package: eslint-plugin-ai-rules
+```text
+eslint-ai-guard/
 ├── src/
-│   ├── index.ts              # re-exports plugin + configs + types + presets
-│   ├── plugin.ts             # plugin.meta + rules
+│   ├── index.ts
+│   ├── plugin.ts
 │   ├── configs/
-│   │   ├── recommended.ts    # flat-config preset (bundled rules)
-│   │   ├── projects.ts       # project presets + custom structure factory
+│   │   ├── recommended.ts
+│   │   ├── projects.ts
 │   │   └── index.ts
 │   ├── types/
-│   │   └── structure.ts      # structure DSL types
+│   │   └── structure.ts
 │   ├── structures/
-│   │   ├── mergeStructure.ts # preset + override merge
+│   │   ├── hasStructureRules.ts
+│   │   ├── mergeStructure.ts
 │   │   ├── validateStructure.ts
 │   │   └── presets/
 │   │       ├── frontend.ts
 │   │       ├── backend.ts
 │   │       ├── other.ts
+│   │       ├── helpers.ts
 │   │       └── index.ts
-│   ├── utils/                # name/path/file matching helpers
+│   ├── utils/
 │   └── rules/
 │       ├── FilenamePascalCase.ts
 │       ├── NoMultilineImports.ts
+│       ├── ProjectSetup.ts
 │       ├── ProjectStructure.ts
-│       ├── SortImports.ts    # also exports getSortedContent
+│       ├── SortImports.ts
 │       └── index.ts
-├── test/                     # node:test suites (run against dist)
+├── test/
 ├── scripts/
-│   └── TestConsumer.mjs      # tarball consumer smoke test
-├── eslint/                   # deprecated original implementations
-├── eslint.config.mjs         # dogfooding: aiRules.configs.projects from dist
-├── tsconfig.json             # ESNext/bundler, no .js extensions
-├── tsup.config.ts            # entry src/index.ts, format cjs+esm, dts, splitting:false
-├── package.json              # type module, exports ., files [dist]
-└── dist/                     # build output (gitignored)
+│   └── TestConsumer.mjs
+├── eslint/
+├── eslint.config.mjs
+├── tsconfig.json
+├── tsup.config.ts
+├── package.json
+└── dist/
 ```
 
 ### Adding a new rule
 
-1. Create `src/rules/MyRule.ts` (`Rule.RuleModule`, `meta.messages`, `fixable` if needed)
-2. Export it from `src/rules/index.ts`
-3. Register in `src/plugin.ts` (`rules: { 'my-rule': myRule }`)
-4. Enable in `src/configs/recommended.ts` (`'ai-rules/my-rule': 'error'`)
-5. Add a `RuleTester` case in `test/` (add a fixture if needed)
-6. `npm run verify`
+1. Create `src/rules/MyRule.ts`.
+2. Export it from `src/rules/index.ts`.
+3. Register it in `src/plugin.ts`.
+4. Add it to `src/configs/recommended.ts` if it should be enabled by default.
+5. Add tests in `test/`.
+6. Run `npm run verify`.
 
-### Publishing
+## Publishing
 
 ```bash
-npm run verify        # typecheck + test + lint + pack
-npm run test:release  # consumer smoke + publint + arethetypeswrong
+npm run verify
+npm run test:release
 npm version patch|minor|major
-npm publish --access public  # prepublishOnly runs verify (typecheck+test+lint+pack)
-# or manually: npm run verify && npm publish --access public
+npm publish --access public
 ```
+
+`prepublishOnly` runs `verify` and refuses to publish with uncommitted changes.
 
 ## Legacy
 
-`eslint/` keeps the three original rule files before packaging (deprecated). Source of truth is now `src/rules/`.
+`eslint/` keeps the three original rule implementations before packaging. Source of truth is `src/rules/`.
 
 ## License
 

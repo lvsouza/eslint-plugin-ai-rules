@@ -19,6 +19,7 @@ test('creates a frontend config from a preset', () => {
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'off')
   assert.ok(config.ignores.includes('src/services/generated/**'))
+  assert.equal(projectSettings(config).preset, 'frontend')
   assert.ok(projectSettings(config).structure.folders.src)
 })
 
@@ -62,6 +63,7 @@ test('other preset does not enable structure validation', () => {
 
   assert.equal(config.rules['ai-rules/project-structure'], 'off')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'error')
+  assert.equal(projectSettings(config).preset, 'other')
 })
 
 test('other preset accepts a custom structure', () => {
@@ -94,6 +96,7 @@ test('custom structure works without a preset', () => {
   ])
 
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
+  assert.equal(projectSettings(config).preset, undefined)
   assert.deepEqual(projectSettings(config).structure.files, ['index.ts'])
 })
 

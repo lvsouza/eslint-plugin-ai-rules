@@ -25,6 +25,7 @@ export const recommended: Linter.Config[] = [
       'ai-rules/sort-imports': 'error',
       'ai-rules/no-multiline-imports': 'error',
       'ai-rules/filename-pascal-case': 'error',
+      'ai-rules/project-setup': 'warn',
       'max-len': 'off',
       'import-x/no-duplicates': 'error',
       'import-x/no-default-export': 'off',

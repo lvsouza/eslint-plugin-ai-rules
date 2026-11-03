@@ -39,6 +39,7 @@ export interface IProjectPreset {
 
 export interface IResolvedProject {
   rootFolder: string
+  preset?: TProjectPreset
   structure: IProjectStructure
 }
 
