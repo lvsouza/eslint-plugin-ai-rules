@@ -38,8 +38,9 @@ export const projectSetup: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
     docs: {
-      description:
-        'Report when the project structure validation is not configured',
+      description: 'Require project structure validation to be configured',
+      recommended: true,
+      url: 'https://github.com/lvsouza/eslint-ai-guard/blob/main/README.md#ai-rulesproject-setup',
     },
     schema: [],
     messages: {

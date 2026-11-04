@@ -5,3 +5,7 @@ coverage
 .tmp-*
 tmp-eslint-*
 package-lock.json
+.env
+.env.*
+*.log
+.DS_Store

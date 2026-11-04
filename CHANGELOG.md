@@ -1,16 +1,26 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 - 2026-11-04
 
 ### Added
 
 - `rules` option on project definitions. It uses the standard ESLint rule format and is applied after recommended, preset and automatic structure/relations rules, so any rule can be disabled or have its severity/options changed.
 - Documentation and tests covering rule opt-out through flat-config overrides after `projects()`/`recommended`.
+- `meta.docs.url`, `meta.docs.recommended` and rule schema descriptions for all rules.
+- `meta.defaultOptions` for `ai-rules/filename-pascal-case`.
+- Contribution guide, security policy, code of conduct, issue and pull request templates.
+- Dependabot, CodeQL, dependency review and npm provenance release workflow.
 
 ### Changed
 
 - `ai-rules/project-setup` now reports a regular ESLint diagnostic instead of using `console.warn`. Its severity now behaves like any other rule (`off`, `warn`, `error`).
 - Rule names and IDs are centralized in `src/rules/constants.ts` to prevent naming drift.
+- Rule messages and comments are now consistently in English.
+- The package standardizes on Yarn 1 and removes the stale `package-lock.json`.
+- `publint` and `@arethetypeswrong/cli` are pinned development dependencies.
+- CI now runs with restricted permissions, concurrency control, timeouts and coverage checks.
+- Package metadata, keywords, license copyright and npm `exports` were updated.
+- The legacy `eslint/` directory was removed. `src/rules/` is the only source of truth.
 
 ## 0.3.0
 

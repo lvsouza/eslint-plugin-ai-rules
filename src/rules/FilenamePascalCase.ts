@@ -10,17 +10,31 @@ interface IFilenamePascalCaseOptions {
 export const filenamePascalCase: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
-    docs: { description: 'Enforce PascalCase for file names' },
+    docs: {
+      description: 'Enforce PascalCase for file names',
+      recommended: true,
+      url: 'https://github.com/lvsouza/eslint-ai-guard/blob/main/README.md#ai-rulesfilename-pascal-case',
+    },
     schema: [
       {
         type: 'object',
         properties: {
-          ignore: { type: 'array', items: { type: 'string' } },
-          ignoreMiddleExtensions: { type: 'boolean' },
+          ignore: {
+            type: 'array',
+            items: { type: 'string' },
+            description:
+              'Regex strings matched against the file name and relative path.',
+          },
+          ignoreMiddleExtensions: {
+            type: 'boolean',
+            description:
+              'Allow middle extensions such as .test in file names.',
+          },
         },
         additionalProperties: false,
       },
     ],
+    defaultOptions: [{ ignore: [], ignoreMiddleExtensions: true }],
     messages: {
       invalid: 'File name "{{basename}}" must be in PascalCase. Rename to "{{expected}}".',
     },

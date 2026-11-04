@@ -212,6 +212,8 @@ export const projectStructure: Rule.RuleModule = {
     type: 'problem',
     docs: {
       description: 'Enforce the configured project folder and file structure',
+      recommended: false,
+      url: 'https://github.com/lvsouza/eslint-ai-guard/blob/main/README.md#ai-rulesproject-structure',
     },
     schema: [],
     messages: {

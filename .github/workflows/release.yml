@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          registry-url: https://registry.npmjs.org
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Validate tag matches package version
+        run: |
+          node - <<'NODE'
+          const { version } = require('./package.json')
+          const tag = process.env.GITHUB_REF_NAME.replace(/^v/, '')
+
+          if (version !== tag) {
+            console.error(`Tag ${process.env.GITHUB_REF_NAME} does not match package.json version ${version}.`)
+            process.exit(1)
+          }
+          NODE
+
+      - run: yarn verify
+      - run: yarn test:release
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,6 +3,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
+import eslintPlugin from 'eslint-plugin-eslint-plugin'
 import aiRules from './dist/index.js'
 
 /** @type {import('./dist/index.js').IProjectStructure} */
@@ -114,6 +115,19 @@ export default defineConfig([
     files: ['scripts/**/*.mjs'],
     extends: [js.configs.recommended],
     languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['src/rules/**/*.ts'],
+    ...eslintPlugin.configs['rules-recommended'],
+    rules: {
+      ...eslintPlugin.configs['rules-recommended'].rules,
+      'eslint-plugin/meta-property-ordering': 'error',
+      'eslint-plugin/no-incomplete-meta-schema': 'error',
+      'eslint-plugin/no-incorrect-meta-schema': 'error',
+      'eslint-plugin/require-meta-docs-description': ['error', { pattern: '^(Enforce|Require|Disallow)' }],
+      'eslint-plugin/require-meta-docs-recommended': 'error',
+      'eslint-plugin/require-meta-docs-url': 'error',
+    },
   },
   ...structureConfigs,
   ...typescriptConfigs,

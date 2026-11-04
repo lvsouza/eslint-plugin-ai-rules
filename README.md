@@ -1,6 +1,7 @@
 # eslint-plugin-ai-rules
 
 [![npm version](https://img.shields.io/npm/v/eslint-plugin-ai-rules)](https://www.npmjs.com/package/eslint-plugin-ai-rules)
+[![CI](https://github.com/lvsouza/eslint-ai-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/lvsouza/eslint-ai-guard/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![node >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
 [![eslint 9.22+ / 10](https://img.shields.io/badge/eslint-%5E9.22%20%7C%7C%20%5E10-4B32C3)](https://eslint.org)
@@ -102,7 +103,9 @@ npx eslint --fix .
 - [Migrating from 0.2.x](#migrating-from-02x)
 - [Development](#development)
 - [Publishing](#publishing)
-- [Legacy](#legacy)
+- [Articles](#articles)
+- [Contributing](#contributing)
+- [Security](#security)
 
 ## Configuration warning
 
@@ -1294,22 +1297,24 @@ If you intentionally do not want structure validation:
 ## Development
 
 ```bash
-git clone <repo>
+git clone https://github.com/lvsouza/eslint-ai-guard.git
 cd eslint-ai-guard
-npm install
+corepack enable
+yarn install --frozen-lockfile
 
-npm run typecheck      # tsc --noEmit
-npm test               # node:test against dist
-npm run lint           # eslint .
-npm run lint -- --fix
-npm run build          # tsup -> ESM + CJS + declarations
-npm run dev            # tsup --watch
-npm run verify         # typecheck + test + lint + pack
-npm run test:coverage  # c8 coverage with thresholds
-npm run test:consumer  # install packed tarball in a temp project
-npm run test:package   # publint + arethetypeswrong
-npm run test:release   # consumer + package checks
-npm pack --dry-run     # verify published files
+yarn typecheck      # tsc --noEmit
+yarn test           # node:test against dist
+yarn test:watch     # node:test in watch mode
+yarn lint           # eslint .
+yarn lint --fix
+yarn build          # tsup -> ESM + CJS + declarations
+yarn dev            # tsup --watch
+yarn verify         # typecheck + test + lint + pack
+yarn test:coverage  # c8 coverage with thresholds
+yarn test:consumer  # install packed tarball in a temp project
+yarn test:package   # publint + arethetypeswrong
+yarn test:release   # consumer + package checks
+npm pack --dry-run  # verify published files
 ```
 
 `test:consumer` and `test:package` are release checks and are not part of `verify`. They may use the network.
@@ -1317,11 +1322,11 @@ npm pack --dry-run     # verify published files
 The consumer smoke test covers structure validation, relations with aliases and type-only imports, warning/suppression, ESM and CJS. It accepts `ESLINT_VERSION`:
 
 ```bash
-ESLINT_VERSION=9.22.0 npm run test:consumer
-ESLINT_VERSION='^10.0.0' npm run test:consumer
+ESLINT_VERSION=9.22.0 yarn test:consumer
+ESLINT_VERSION='^10.0.0' yarn test:consumer
 ```
 
-CI runs `verify`, coverage and consumer checks on Node 20, 22 and 24.
+CI runs `verify`, coverage and consumer checks on Node 20, 22 and 24, plus ESLint 9.22 and 10 compatibility.
 
 ### Project structure
 
@@ -1344,13 +1349,9 @@ eslint-ai-guard/
 │   │   ├── validateRelations.ts
 │   │   ├── validateStructure.ts
 │   │   └── presets/
-│   │       ├── frontend.ts
-│   │       ├── backend.ts
-│   │       ├── other.ts
-│   │       ├── helpers.ts
-│   │       └── index.ts
 │   ├── utils/
 │   └── rules/
+│       ├── constants.ts
 │       ├── FilenamePascalCase.ts
 │       ├── NoMultilineImports.ts
 │       ├── ProjectSetup.ts
@@ -1360,11 +1361,19 @@ eslint-ai-guard/
 ├── test/
 ├── scripts/
 │   └── TestConsumer.mjs
+├── docs/
 ├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── eslint/
+│   ├── workflows/
+│   │   ├── ci.yml
+│   │   ├── codeql.yml
+│   │   ├── dependency-review.yml
+│   │   └── release.yml
+│   ├── ISSUE_TEMPLATE/
+│   └── dependabot.yml
 ├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── CODE_OF_CONDUCT.md
 ├── eslint.config.mjs
 ├── tsconfig.json
 ├── tsup.config.ts
@@ -1374,31 +1383,46 @@ eslint-ai-guard/
 
 ### Adding a new rule
 
-1. Create `src/rules/MyRule.ts`.
-2. Export it from `src/rules/index.ts`.
-3. Register it in `src/plugin.ts`.
-4. Add it to `src/configs/recommended.ts` if it should be enabled by default.
-5. Add tests in `test/`.
-6. Run `npm run verify`.
+1. Create `src/rules/MyRule.ts` in PascalCase.
+2. Add the rule name to `src/rules/constants.ts`.
+3. Export it from `src/rules/index.ts`.
+4. Register it in `src/plugin.ts`.
+5. Add it to `src/configs/recommended.ts` if it should be enabled by default.
+6. Provide `meta.docs.description`, `meta.docs.url`, `meta.docs.recommended`, `meta.schema` and `meta.messages`.
+7. Add `meta.defaultOptions` when the rule accepts options.
+8. Add tests in `test/`.
+9. Run `yarn verify`.
 
 ## Publishing
 
-1. Change `version` in `package.json`.
-2. Optionally run `yarn build` to check the build and generated version.
-3. Run `npm publish`.
+Releases are driven by a version tag. The workflow validates that the tag matches `package.json`, runs all checks, publishes to npm with provenance and creates a GitHub release.
 
-`prepack` runs `yarn build` automatically, so `npm publish` always packs a fresh `dist`. The plugin version is injected from `package.json` during the build, so you do not need to edit `src/plugin.ts`.
-
-For an extra check before publishing:
+1. Update `version` in `package.json`.
+2. Update `CHANGELOG.md`.
+3. Run `yarn verify` and `yarn test:release`.
+4. Commit and push the changes.
+5. Create and push a tag:
 
 ```bash
-yarn verify
-npm pack --dry-run
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
-## Legacy
+The release workflow requires the `NPM_TOKEN` repository secret. Provenance also requires `id-token: write`, which is already configured in `.github/workflows/release.yml`.
 
-`eslint/` keeps the three original rule implementations before packaging. Source of truth is `src/rules/`.
+`prepack` runs `yarn build` automatically, so published packages always contain a fresh `dist`. The plugin version is injected from `package.json` during the build, so you do not need to edit `src/plugin.ts`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing and rule-authoring guidelines. All participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for supported versions and private vulnerability reporting.
+
+## Articles
+
+- [How I forced AI to follow the project standard with ESLint](docs/tabnews-eslint-plugin-ai-rules.md)
 
 ## License
 

@@ -5,12 +5,16 @@ export const sortImports: Rule.RuleModule = {
   meta: {
     type: 'layout',
     docs: {
-      description: 'Sort imports by group and line length descending, collapsing multiline imports',
+      description:
+        'Enforce sorted imports by group and line length descending, collapsing multiline imports',
+      recommended: true,
+      url: 'https://github.com/lvsouza/eslint-ai-guard/blob/main/README.md#ai-rulessort-imports',
     },
     fixable: 'code',
     schema: [],
     messages: {
-      sortRequired: 'As importações devem estar ordenadas por grupo e tamanho da linha, ocupando uma única linha.',
+      sortRequired:
+        'Imports must be sorted by group and line length, each on a single line.',
     },
   },
   create(context) {
@@ -36,7 +40,7 @@ export const sortImports: Rule.RuleModule = {
 }
 
 // ---------------------------------------------------------------------------
-// Tipos auxiliares
+// Supporting types
 // ---------------------------------------------------------------------------
 type TImportItem = {
   line: string
@@ -44,7 +48,7 @@ type TImportItem = {
 }
 
 // ---------------------------------------------------------------------------
-// Lógica Core - exportada para teste e reutilização
+// Core logic - exported for testing and reuse
 // ---------------------------------------------------------------------------
 export function getSortedContent(content: string): string | null {
   const collapseMultiline = (match: string) => {
@@ -56,7 +60,7 @@ export function getSortedContent(content: string): string | null {
 
   const normalizedContent = content
     .replace(/import\s+([^'";]+?)\s+from\s+(['"][^'"]+['"])/g, collapseMultiline)
-    // Apenas re-exports válidos: export { ... } from / export * from / export * as X from / export type { ... } from
+    // Only valid re-exports: export { ... } from / export * from / export * as X from / export type { ... } from
     .replace(/export\s+(?:type\s+)?(?:\{[^}]*\}|\*(?:\s+as\s+\w+)?)\s+from\s+(['"][^'"]+['"])/g, collapseMultiline)
 
   const lines: string[] = normalizedContent.split('\n')

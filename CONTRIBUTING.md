@@ -1,0 +1,70 @@
+# Contributing
+
+Thanks for taking the time to contribute to `eslint-plugin-ai-rules`.
+
+## Requirements
+
+- Node.js `>= 20`
+- Yarn `1.22.x`
+- Git
+
+The repository uses Yarn 1. If you use Corepack:
+
+```bash
+corepack enable
+yarn install --frozen-lockfile
+```
+
+## Development commands
+
+```bash
+yarn install --frozen-lockfile
+yarn typecheck
+yarn test
+yarn lint
+yarn test:coverage
+yarn test:consumer
+yarn test:package
+yarn verify
+```
+
+`yarn verify` runs type checking, tests, linting and a package dry-run. Consumer and package checks may use the network.
+
+## Project layout
+
+- `src/rules/` contains the ESLint rules.
+- `src/configs/` contains the flat config factories.
+- `src/structures/` contains structure parsing, merging and validation.
+- `src/types/` contains the public types.
+- `test/` contains unit, integration and consumer-facing tests.
+- `scripts/TestConsumer.mjs` validates the packed package in a temporary project.
+
+## Adding or changing a rule
+
+1. Keep the rule ID in `kebab-case` and the implementation file in `PascalCase`.
+2. Register the rule name in `src/rules/constants.ts`.
+3. Add the rule to `src/plugin.ts`.
+4. Provide `meta.type`, `meta.docs.description`, `meta.docs.url`, `meta.schema` and `meta.messages`.
+5. Add a test that fails before the change and passes after it.
+6. Update the README rule reference when behavior or options change.
+7. Run `yarn verify`.
+
+Rules enabled by `recommended` should also set `meta.docs.recommended: true`.
+
+## Commit and pull request guidelines
+
+- Prefer small, focused pull requests.
+- Use conventional commit messages such as `feat:`, `fix:`, `docs:`, `test:` and `chore:`.
+- Describe the user-facing behavior change and the tests that cover it.
+- Update `CHANGELOG.md` for user-facing changes.
+
+## Release process
+
+Releases are manual and triggered by a version tag:
+
+1. Update `package.json` and `CHANGELOG.md`.
+2. Run `yarn verify` and `yarn test:release`.
+3. Create and push a tag such as `v0.4.0`.
+4. The release workflow publishes to npm with provenance and creates a GitHub release.
+
+Never publish locally without the release workflow unless explicitly necessary.
