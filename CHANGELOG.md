@@ -6,6 +6,10 @@
 
 - `import-x/no-default-export` is now enabled as `error` in `recommended` and inherited by `projects()`. This is a breaking change for projects that use default exports; opt out per file or rule when a framework requires them.
 
+### Fixed
+
+- Kept the development TypeScript version on the 6.0.x line and declared Node types explicitly so the `tsup` DTS pipeline and `typescript-eslint` keep working with the compiler API.
+
 ## 0.4.0 - 2026-11-04
 
 ### Added
