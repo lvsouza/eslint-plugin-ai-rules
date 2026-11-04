@@ -152,6 +152,7 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 - **Architecture relations** — enforce which layers can import which other layers, including global vs page-local scope.
 - **Monorepo friendly** — one `rootFolder` per project, including nested roots.
 - **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
+- **Named exports only** — `import-x/no-default-export` forbids default exports by default.
 - **Bundled rules** — ships with useful `import-x`, `@stylistic`, `boundaries` and `@typescript-eslint` rules.
 - **ESM + CJS** — `dist/index.js` and `dist/index.cjs`, with correct type declarations for both.
 
@@ -1037,12 +1038,23 @@ Groups:
 | Rule | Default | Purpose |
 |------|---------|---------|
 | `import-x/no-duplicates` | `error` | Prevent importing the same module twice |
-| `import-x/no-default-export` | `off` | Default exports are allowed |
+| `import-x/no-default-export` | `error` | Forbid default exports |
 | `max-len` | `off` | No line length limit |
 | `@stylistic/semi` | `['error', 'never']` | No semicolons |
 | `@typescript-eslint/consistent-type-imports` | `['error', { prefer: 'type-imports' }]` | Prefer `import type` |
 | `@typescript-eslint/no-unused-vars` | `['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]` | Ignore unused values prefixed with `_` |
 | `@typescript-eslint/naming-convention` | interfaces `I` prefix, type aliases `T` prefix | Enforce `IUser` and `TUser` style |
+
+`import-x/no-default-export` reports both `export default` and `export { value as default }`. Framework files that require default exports, such as `eslint.config.mjs`, `*.config.*` or framework route files, must opt out:
+
+```ts
+{
+  files: ['*.config.*', 'eslint.config.mjs', 'src/pages/**/*'],
+  rules: {
+    'import-x/no-default-export': 'off',
+  },
+}
+```
 
 When `relations` is configured, `projects()` also registers `eslint-plugin-boundaries` and enables `boundaries/dependencies` with the generated layer policies.
 
@@ -1226,6 +1238,19 @@ Run ESLint from the project root, or configure the correct `basePath`.
 ### Flat config only
 
 This plugin exports flat config arrays. It does not support legacy `.eslintrc`.
+
+### Default export is reported
+
+`import-x/no-default-export` is enabled as `error` in `recommended`. Prefer named exports, or opt out for files that require a default export:
+
+```ts
+{
+  files: ['*.config.*', 'src/pages/**/*'],
+  rules: {
+    'import-x/no-default-export': 'off',
+  },
+}
+```
 
 ### Filename rule too strict
 

@@ -132,6 +132,10 @@ export default defineConfig([
   ...structureConfigs,
   ...typescriptConfigs,
   {
+    files: ['src/index.ts', 'eslint.config.mjs', 'tsup.config.ts'],
+    rules: { 'import-x/no-default-export': 'off' },
+  },
+  {
     files: ['**/*.d.ts'],
     rules: { '@typescript-eslint/naming-convention': 'off' },
   },

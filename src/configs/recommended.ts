@@ -29,7 +29,7 @@ export const recommended: Linter.Config[] = [
       [RULE_IDS.projectSetup]: 'warn',
       'max-len': 'off',
       'import-x/no-duplicates': 'error',
-      'import-x/no-default-export': 'off',
+      'import-x/no-default-export': 'error',
       '@stylistic/semi': ['error', 'never'],
       '@typescript-eslint/consistent-type-imports': [
         'error',
@@ -47,5 +47,3 @@ export const recommended: Linter.Config[] = [
     },
   },
 ]
-
-export default recommended

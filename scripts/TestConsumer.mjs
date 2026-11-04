@@ -324,6 +324,13 @@ try {
     throw new Error('consumer eslint did not print the setup warning.')
   }
 
+  write('src/Default.ts', 'export default 1\n')
+  assertFailure(
+    runEslint('src/Default.ts'),
+    'consumer eslint default export',
+    'import-x/no-default-export',
+  )
+
   writeConfig(otherConfig())
   assertNoWarning(
     runEslint('src/index.ts'),

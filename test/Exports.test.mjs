@@ -24,6 +24,7 @@ test('ESM exports are wired correctly', () => {
   assert.equal(plugin.rules['project-setup'], projectSetup)
   assert.equal(plugin.rules['project-structure'], projectStructure)
   assert.equal(recommended[0].rules['ai-rules/project-setup'], 'warn')
+  assert.equal(recommended[0].rules['import-x/no-default-export'], 'error')
   assert.deepEqual(Object.keys(presets), ['frontend', 'backend', 'other'])
 })
 
