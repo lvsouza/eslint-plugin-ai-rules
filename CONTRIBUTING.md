@@ -63,8 +63,8 @@ Rules enabled by `recommended` should also set `meta.docs.recommended: true`.
 Releases are manual and triggered by a version tag:
 
 1. Update `package.json` and `CHANGELOG.md`.
-2. Run `yarn verify` and `yarn test:release`.
+2. Run `yarn test:release`.
 3. Create and push a tag such as `v0.4.0`.
-4. The release workflow publishes to npm with provenance and creates a GitHub release.
+4. The release workflow runs all checks and publishes to npm with provenance, then creates a GitHub release.
 
 Never publish locally without the release workflow unless explicitly necessary.

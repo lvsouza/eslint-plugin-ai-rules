@@ -18,9 +18,13 @@
 - Rule messages and comments are now consistently in English.
 - The package standardizes on Yarn 1 and removes the stale `package-lock.json`.
 - `publint` and `@arethetypeswrong/cli` are pinned development dependencies.
-- CI now runs with restricted permissions, concurrency control, timeouts and coverage checks.
+- Validation is centralized in the tag-driven release workflow, which runs the compatibility matrix, coverage, consumer and package checks before publishing. Pull requests keep dependency review and CodeQL.
 - Package metadata, keywords, license copyright and npm `exports` were updated.
 - The legacy `eslint/` directory was removed. `src/rules/` is the only source of truth.
+
+### Fixed
+
+- `test:package` now builds `dist` before running `publint` and `attw`, so it works from a clean checkout.
 
 ## 0.3.0
 

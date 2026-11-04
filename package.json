@@ -35,8 +35,8 @@
     "test:watch": "node --test --watch test/*.test.mjs",
     "test:coverage": "yarn build && c8 --include dist/index.js --check-coverage --lines 95 --branches 90 --functions 95 --reporter=text node --test test/*.test.mjs",
     "test:consumer": "node scripts/TestConsumer.mjs",
-    "test:package": "publint --pack npm && attw --pack .",
-    "test:release": "yarn test:consumer && yarn test:package",
+    "test:package": "yarn build && publint --pack npm && attw --pack .",
+    "test:release": "yarn verify && yarn test:coverage && yarn test:consumer && yarn test:package",
     "verify": "yarn typecheck && yarn test && yarn lint && npm pack --dry-run",
     "prepack": "yarn build"
   },

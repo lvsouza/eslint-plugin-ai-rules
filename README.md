@@ -1,7 +1,6 @@
 # eslint-plugin-ai-rules
 
 [![npm version](https://img.shields.io/npm/v/eslint-plugin-ai-rules)](https://www.npmjs.com/package/eslint-plugin-ai-rules)
-[![CI](https://github.com/lvsouza/eslint-ai-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/lvsouza/eslint-ai-guard/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![node >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
 [![eslint 9.22+ / 10](https://img.shields.io/badge/eslint-%5E9.22%20%7C%7C%20%5E10-4B32C3)](https://eslint.org)
@@ -1313,11 +1312,11 @@ yarn verify         # typecheck + test + lint + pack
 yarn test:coverage  # c8 coverage with thresholds
 yarn test:consumer  # install packed tarball in a temp project
 yarn test:package   # publint + arethetypeswrong
-yarn test:release   # consumer + package checks
+yarn test:release   # full validation before release
 npm pack --dry-run  # verify published files
 ```
 
-`test:consumer` and `test:package` are release checks and are not part of `verify`. They may use the network.
+`test:consumer` and `test:package` are release checks and are not part of `verify`. They may use the network. `test:release` runs the complete validation: `verify`, coverage, consumer and package checks.
 
 The consumer smoke test covers structure validation, relations with aliases and type-only imports, warning/suppression, ESM and CJS. It accepts `ESLINT_VERSION`:
 
@@ -1326,7 +1325,7 @@ ESLINT_VERSION=9.22.0 yarn test:consumer
 ESLINT_VERSION='^10.0.0' yarn test:consumer
 ```
 
-CI runs `verify`, coverage and consumer checks on Node 20, 22 and 24, plus ESLint 9.22 and 10 compatibility.
+The full validation runs in `.github/workflows/release.yml` on version tags: `verify` on Node 20, 22 and 24, coverage and package checks on Node 24, and consumer tests on Node 20/24 with ESLint 9.22 and 10. Pull requests keep dependency review and CodeQL.
 
 ### Project structure
 
@@ -1364,7 +1363,6 @@ eslint-ai-guard/
 ├── docs/
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml
 │   │   ├── codeql.yml
 │   │   ├── dependency-review.yml
 │   │   └── release.yml
@@ -1399,7 +1397,7 @@ Releases are driven by a version tag. The workflow validates that the tag matche
 
 1. Update `version` in `package.json`.
 2. Update `CHANGELOG.md`.
-3. Run `yarn verify` and `yarn test:release`.
+3. Run `yarn test:release`.
 4. Commit and push the changes.
 5. Create and push a tag:
 
@@ -1409,6 +1407,13 @@ git push origin v0.4.0
 ```
 
 The release workflow requires the `NPM_TOKEN` repository secret. Provenance also requires `id-token: write`, which is already configured in `.github/workflows/release.yml`.
+
+The workflow runs all checks before publishing. If any check fails, the publish job is skipped. Fix the problem, delete the tag and recreate it before pushing again:
+
+```bash
+git tag -d v0.4.0
+git push origin :refs/tags/v0.4.0
+```
 
 `prepack` runs `yarn build` automatically, so published packages always contain a fresh `dist`. The plugin version is injected from `package.json` during the build, so you do not need to edit `src/plugin.ts`.
 
