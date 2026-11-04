@@ -4,7 +4,7 @@ import type { IAiRulesSettings, IResolvedProject } from '../types/structure'
 import { hasStructureRules } from '../structures/hasStructureRules'
 
 
-let hasWarned = false
+let hasReported = false
 
 function isConfiguredProject(project: IResolvedProject): boolean {
   if (project.relations) return true
@@ -20,45 +20,48 @@ function isConfiguredProject(project: IResolvedProject): boolean {
   return Boolean(project.structure && hasStructureRules(project.structure))
 }
 
-function warnOnce(): void {
-  if (hasWarned) return
+function shouldReportOnce(): boolean {
+  if (hasReported) return false
   if (
     process.env.AI_RULES_SILENT === '1' ||
     process.env.AI_RULES_SILENT === 'true'
   ) {
-    return
+    return false
   }
 
-  hasWarned = true
-  console.warn(
-    [
-      '[eslint-plugin-ai-rules] Project structure validation is not configured.',
-      "Configure it with aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' | 'backend' }]).",
-      "If this project is not a frontend/backend, use preset: 'other' to disable this warning.",
-    ].join('\n'),
-  )
+  hasReported = true
+
+  return true
 }
 
 export const projectSetup: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Warn when the project structure validation is not configured',
+      description:
+        'Report when the project structure validation is not configured',
     },
     schema: [],
-    messages: {},
+    messages: {
+      notConfigured:
+        'Project structure validation is not configured. Configure it with aiRules.configs.projects([{ rootFolder: ".", preset: "frontend" | "backend" }]). If this project is not a frontend/backend, use preset: "other" to disable this warning.',
+    },
   },
   create(context) {
     return {
-      Program() {
+      Program(node) {
         const settings = context.settings['ai-rules'] as IAiRulesSettings | undefined
         const projects =
           settings?.projects ??
           (settings?.project ? [settings.project] : [])
 
         if (projects.some(isConfiguredProject)) return
+        if (!shouldReportOnce()) return
 
-        warnOnce()
+        context.report({
+          node,
+          messageId: 'notConfigured',
+        })
       },
     }
   },

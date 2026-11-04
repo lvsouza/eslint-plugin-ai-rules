@@ -27,6 +27,34 @@ test('ESM exports are wired correctly', () => {
   assert.deepEqual(Object.keys(presets), ['frontend', 'backend', 'other'])
 })
 
+test('rule names are stable and kebab-cased', () => {
+  const ruleNames = Object.keys(aiRules.rules).sort()
+
+  assert.deepEqual(ruleNames, [
+    'filename-pascal-case',
+    'no-multiline-imports',
+    'project-setup',
+    'project-structure',
+    'sort-imports',
+  ])
+
+  for (const ruleName of ruleNames) {
+    assert.match(ruleName, /^[a-z]+(?:-[a-z]+)*$/)
+  }
+
+  const recommendedRuleNames = Object.keys(recommended[0].rules)
+    .filter((ruleId) => ruleId.startsWith('ai-rules/'))
+    .map((ruleId) => ruleId.slice('ai-rules/'.length))
+    .sort()
+
+  assert.deepEqual(recommendedRuleNames, [
+    'filename-pascal-case',
+    'no-multiline-imports',
+    'project-setup',
+    'sort-imports',
+  ])
+})
+
 test('CJS exports are wired correctly', () => {
   assert.equal(typeof cjs.default.configs.projects, 'function')
   assert.equal(typeof cjs.projects, 'function')

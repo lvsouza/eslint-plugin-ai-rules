@@ -104,6 +104,36 @@ export default defineConfig([
 `
 }
 
+function structureOptOutConfig() {
+  return `import aiRules from 'eslint-plugin-ai-rules'
+import { defineConfig } from 'eslint/config'
+import tseslint from 'typescript-eslint'
+
+const structure = {
+  files: ['package.json', 'eslint.config.mjs'],
+  folders: {
+    src: {
+      files: ['index.ts'],
+    },
+  },
+}
+
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    {
+      rootFolder: '.',
+      preset: 'other',
+      structure,
+      rules: {
+        'ai-rules/project-structure': 'off',
+      },
+    },
+  ]),
+])
+`
+}
+
 function relationsConfig(allowTypeImports = false) {
   return `import aiRules from 'eslint-plugin-ai-rules'
 import { defineConfig } from 'eslint/config'
@@ -224,6 +254,14 @@ try {
     'consumer eslint invalid structure file',
     'ai-rules/project-structure',
   )
+
+  writeConfig(structureOptOutConfig())
+  assertSuccess(
+    runEslint('src/invalid/Bad.ts'),
+    'consumer eslint project rule opt-out',
+  )
+
+  writeConfig(structureConfig())
 
   write(
     'tsconfig.json',

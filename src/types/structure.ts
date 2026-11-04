@@ -52,6 +52,7 @@ export interface IProjectDefinition {
   preset?: TProjectPreset
   structure?: IProjectStructure
   relations?: IRelationsConfig
+  rules?: Linter.RulesRecord
 }
 
 export interface IProjectPreset {

@@ -10,6 +10,7 @@ import { validateStructure } from '../structures/validateStructure'
 import { mergeRelations } from '../structures/mergeRelations'
 import { mergeStructure } from '../structures/mergeStructure'
 import { getPreset } from '../structures/presets'
+import { RULE_IDS } from '../rules/constants'
 import { recommended } from './recommended'
 
 
@@ -95,6 +96,19 @@ function validateDefinition(
       })
     }
   }
+
+  if (
+    definition.rules !== undefined &&
+    (
+      typeof definition.rules !== 'object' ||
+      definition.rules === null ||
+      Array.isArray(definition.rules)
+    )
+  ) {
+    throw new Error(
+      `Invalid project at index ${index}: rules must be an object.`,
+    )
+  }
 }
 
 function resolveStructure(
@@ -164,11 +178,10 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     ]))
     const rules: Linter.RulesRecord = {
       ...baseConfig.rules,
-      ...(preset?.rules ?? {}),
-      'ai-rules/project-structure': structureEnabled ? 'error' : 'off',
-      'ai-rules/filename-pascal-case': structureEnabled
+      [RULE_IDS.projectStructure]: structureEnabled ? 'error' : 'off',
+      [RULE_IDS.filenamePascalCase]: structureEnabled
         ? 'off'
-        : baseConfig.rules?.['ai-rules/filename-pascal-case'] ?? 'error',
+        : baseConfig.rules?.[RULE_IDS.filenamePascalCase] ?? 'error',
       ...(relations
         ? {
             'boundaries/dependencies': [
@@ -177,6 +190,8 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
             ],
           }
         : {}),
+      ...(preset?.rules ?? {}),
+      ...(definition.rules ?? {}),
     }
 
     return {

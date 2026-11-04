@@ -3,6 +3,7 @@ import { noMultilineImports } from './rules/NoMultilineImports'
 import { projectStructure } from './rules/ProjectStructure'
 import { projectSetup } from './rules/ProjectSetup'
 import { sortImports } from './rules/SortImports'
+import { RULE_NAMES } from './rules/constants'
 
 
 declare const __AI_RULES_VERSION__: string
@@ -14,10 +15,10 @@ export const plugin = {
     version: __AI_RULES_VERSION__,
   },
   rules: {
-    'filename-pascal-case': filenamePascalCase,
-    'no-multiline-imports': noMultilineImports,
-    'project-setup': projectSetup,
-    'project-structure': projectStructure,
-    'sort-imports': sortImports,
+    [RULE_NAMES.filenamePascalCase]: filenamePascalCase,
+    [RULE_NAMES.noMultilineImports]: noMultilineImports,
+    [RULE_NAMES.projectSetup]: projectSetup,
+    [RULE_NAMES.projectStructure]: projectStructure,
+    [RULE_NAMES.sortImports]: sortImports,
   },
 } as const

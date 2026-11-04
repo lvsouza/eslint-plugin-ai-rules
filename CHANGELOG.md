@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `rules` option on project definitions. It uses the standard ESLint rule format and is applied after recommended, preset and automatic structure/relations rules, so any rule can be disabled or have its severity/options changed.
+- Documentation and tests covering rule opt-out through flat-config overrides after `projects()`/`recommended`.
+
+### Changed
+
+- `ai-rules/project-setup` now reports a regular ESLint diagnostic instead of using `console.warn`. Its severity now behaves like any other rule (`off`, `warn`, `error`).
+- Rule names and IDs are centralized in `src/rules/constants.ts` to prevent naming drift.
+
 ## 0.3.0
 
 ### Added

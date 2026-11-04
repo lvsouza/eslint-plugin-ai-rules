@@ -3,6 +3,7 @@ import stylistic from '@stylistic/eslint-plugin'
 import tseslint from 'typescript-eslint'
 import type { Linter } from 'eslint'
 
+import { RULE_IDS } from '../rules/constants'
 import { plugin } from '../plugin'
 
 
@@ -22,10 +23,10 @@ export const recommended: Linter.Config[] = [
       ],
     },
     rules: {
-      'ai-rules/sort-imports': 'error',
-      'ai-rules/no-multiline-imports': 'error',
-      'ai-rules/filename-pascal-case': 'error',
-      'ai-rules/project-setup': 'warn',
+      [RULE_IDS.sortImports]: 'error',
+      [RULE_IDS.noMultilineImports]: 'error',
+      [RULE_IDS.filenamePascalCase]: 'error',
+      [RULE_IDS.projectSetup]: 'warn',
       'max-len': 'off',
       'import-x/no-duplicates': 'error',
       'import-x/no-default-export': 'off',

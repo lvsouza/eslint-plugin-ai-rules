@@ -94,6 +94,7 @@ npx eslint --fix .
 - [Structure DSL](#structure-dsl)
 - [Limitations](#limitations)
 - [Rules](#rules)
+- [Disabling or changing rules](#disabling-or-changing-rules)
 - [What runs automatically](#what-runs-automatically)
 - [Recommended preset](#recommended-preset)
 - [Troubleshooting](#troubleshooting)
@@ -105,15 +106,13 @@ npx eslint --fix .
 
 ## Configuration warning
 
-If you install the plugin and use `aiRules.configs.recommended` without configuring the project structure, the plugin prints a warning the first time it lints a file:
+If you install the plugin and use `aiRules.configs.recommended` without configuring the project structure, `ai-rules/project-setup` reports a warning the first time it lints a file:
 
 ```text
-[eslint-plugin-ai-rules] Project structure validation is not configured.
-Configure it with aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' | 'backend' }]).
-If this project is not a frontend/backend, use preset: 'other' to disable this warning.
+Project structure validation is not configured. Configure it with aiRules.configs.projects([{ rootFolder: ".", preset: "frontend" | "backend" }]). If this project is not a frontend/backend, use preset: "other" to disable this warning.  ai-rules/project-setup
 ```
 
-The warning exists only to make sure the new structure rules are actually configured. It is printed once per process.
+The warning exists only to make sure the new structure rules are actually configured. It is reported once per process.
 
 It disappears when you provide a valid configuration:
 
@@ -123,12 +122,22 @@ It disappears when you provide a valid configuration:
 - a custom non-empty `structure`
 - a `relations` configuration
 
-A project containing only `rootFolder` and an empty `structure` is still considered unconfigured and will warn.
+A project containing only `rootFolder` and an empty `structure` is still considered unconfigured and will report.
 
 For CI or temporary runs, silence the warning without changing the config:
 
 ```bash
 AI_RULES_SILENT=1 npx eslint .
+```
+
+You can also disable the rule or change its severity like any other ESLint rule:
+
+```ts
+{
+  rules: {
+    'ai-rules/project-setup': 'off',
+  },
+}
 ```
 
 The warning is still recommended as a setup check, so prefer `preset: 'other'` for projects that intentionally do not use structure validation.
@@ -167,6 +176,7 @@ interface IProjectDefinition {
   preset?: 'frontend' | 'backend' | 'other'
   structure?: IProjectStructure
   relations?: IRelationsConfig
+  rules?: Linter.RulesRecord
 }
 ```
 
@@ -178,6 +188,7 @@ interface IProjectDefinition {
 - `preset` provides a base structure.
 - `structure` is merged on top of the preset.
 - `relations` enables architecture dependency policies with `eslint-plugin-boundaries`.
+- `rules` overrides rule severities and options for that project using the standard ESLint rule format.
 - `preset: 'other'` disables structure validation unless a custom `structure` is provided.
 
 `aiRules.configs.projects([...])` generates one flat config per project. Each config:
@@ -186,9 +197,10 @@ interface IProjectDefinition {
 - sets `settings['ai-rules'].project`;
 - enables `ai-rules/project-structure`;
 - adds `ignores` from `ignoredPaths`;
-- includes the recommended rules;
+- includes the recommended rules, overridable by `rules`;
 - disables `ai-rules/filename-pascal-case`, because file naming is handled by `project-structure`;
-- when `relations` is present, registers `boundaries` and enables `boundaries/dependencies`.
+- when `relations` is present, registers `boundaries` and enables `boundaries/dependencies`;
+- applies `rules` last, so a project can disable or change any rule.
 
 ## Examples
 
@@ -961,12 +973,12 @@ Validates the configured hierarchy, folder names and file names.
 
 ### `ai-rules/project-setup`
 
-Prints the configuration warning described above.
+Reports the configuration warning described above as a regular ESLint diagnostic.
 
 - Type: `suggestion`
 - Enabled as `warn` in `recommended`
-- Does not report lint messages
-- Warns once per process
+- Reports once per process
+- Respects the configured severity (`off`, `warn`, `error`)
 - Suppressed by `preset: 'other'`, `frontend`, `backend` or a non-empty custom structure
 
 ### `ai-rules/filename-pascal-case`
@@ -1038,18 +1050,80 @@ The plugin also configures the `import-x` resolver with:
 extensions: ['.ts', '.tsx', '.d.ts', '.js', '.jsx']
 ```
 
-Override any bundled rule after the preset:
+## Disabling or changing rules
+
+Every rule is controlled through the standard ESLint `rules` object. Any entry accepts `'off'`, `'warn'`, `'error'`, or `['error', options]`.
+
+### Option 1: override after the generated config
+
+Flat config is evaluated in order, so a config placed after `projects()` or `recommended` wins:
 
 ```ts
 export default defineConfig([
-  ...aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' }]),
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    { rootFolder: '.', preset: 'frontend' },
+  ]),
   {
     rules: {
-      '@stylistic/semi': ['error', 'always'],
+      'ai-rules/sort-imports': 'off',
+      'ai-rules/project-structure': 'warn',
+      'ai-rules/filename-pascal-case': 'error',
+      '@stylistic/semi': ['warn', 'always'],
       'import-x/no-default-export': 'off',
+      'boundaries/dependencies': 'off',
     },
   },
 ])
+```
+
+To apply an override only to part of the repository, use `files`:
+
+```ts
+{
+  files: ['scripts/**/*', '*.config.*'],
+  rules: {
+    'ai-rules/filename-pascal-case': 'off',
+  },
+}
+```
+
+### Option 2: per-project `rules`
+
+When using `projects()`, pass `rules` in the project definition. These rules are applied after the recommended rules, the preset rules and the automatic structure/relations rules:
+
+```ts
+aiRules.configs.projects([
+  {
+    rootFolder: 'apps/api',
+    preset: 'backend',
+    rules: {
+      'ai-rules/sort-imports': 'off',
+      'ai-rules/project-structure': 'warn',
+      '@stylistic/semi': ['warn', 'always'],
+      'boundaries/dependencies': 'off',
+    },
+  },
+])
+```
+
+Precedence inside `projects()` is:
+
+1. `recommended` rules
+2. automatic `project-structure`, `filename-pascal-case` and `boundaries/dependencies` rules
+3. `preset.rules`
+4. project `rules`
+5. any flat config placed after `projects()` in the ESLint config array
+
+The `rules` option uses the same shape as ESLint, including options arrays:
+
+```ts
+rules: {
+  'ai-rules/filename-pascal-case': [
+    'error',
+    { ignore: ['\\.config\\.'], ignoreMiddleExtensions: false },
+  ],
+}
 ```
 
 ## What runs automatically
@@ -1106,6 +1180,16 @@ Or explicitly opt out:
 ```
 
 A project with only `rootFolder` and an empty `structure` still warns.
+
+If you intentionally do not want this check, disable the rule:
+
+```ts
+{
+  rules: {
+    'ai-rules/project-setup': 'off',
+  },
+}
+```
 
 For temporary runs or CI, use:
 

@@ -217,6 +217,52 @@ test('custom structure works without a preset', () => {
   assert.deepEqual(projectSettings(config).structure.files, ['index.ts'])
 })
 
+test('project rules override recommended and structural defaults', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'frontend',
+      rules: {
+        'ai-rules/sort-imports': 'off',
+        'ai-rules/project-structure': 'warn',
+        'ai-rules/filename-pascal-case': 'error',
+        '@stylistic/semi': ['warn', 'always'],
+      },
+    },
+  ])
+
+  assert.equal(config.rules['ai-rules/sort-imports'], 'off')
+  assert.equal(config.rules['ai-rules/project-structure'], 'warn')
+  assert.equal(config.rules['ai-rules/filename-pascal-case'], 'error')
+  assert.deepEqual(config.rules['@stylistic/semi'], ['warn', 'always'])
+})
+
+test('project rules override boundaries defaults', () => {
+  const [config] = projects([
+    {
+      rootFolder: '.',
+      preset: 'other',
+      relations: {
+        layers: {
+          controller: 'src/http/controllers',
+          repository: 'src/repositories',
+        },
+        rules: [
+          {
+            from: 'controller',
+            deny: ['repository'],
+          },
+        ],
+      },
+      rules: {
+        'boundaries/dependencies': 'off',
+      },
+    },
+  ])
+
+  assert.equal(config.rules['boundaries/dependencies'], 'off')
+})
+
 test('structure overrides preset files but preserves preset folders', () => {
   const [config] = projects([
     {
@@ -467,6 +513,21 @@ test('validates project definitions', () => {
   assert.throws(
     () => projects([{ rootFolder: 123, preset: 'other' }]),
     /rootFolder must be a non-empty string/,
+  )
+
+  assert.throws(
+    () => projects([{ rootFolder: '.', preset: 'other', rules: null }]),
+    /rules must be an object/,
+  )
+
+  assert.throws(
+    () => projects([{ rootFolder: '.', preset: 'other', rules: [] }]),
+    /rules must be an object/,
+  )
+
+  assert.throws(
+    () => projects([{ rootFolder: '.', preset: 'other', rules: 'off' }]),
+    /rules must be an object/,
   )
 })
 
