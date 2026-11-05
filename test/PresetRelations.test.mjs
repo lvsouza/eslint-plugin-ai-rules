@@ -111,8 +111,8 @@ function lint(config, projectDir, relativeFile, code) {
       settings: config.settings,
       languageOptions: { parser: tseslint.parser },
       rules: {
-        'boundaries/dependencies':
-          config.rules['boundaries/dependencies'],
+        'ai-rules/dependencies':
+          config.rules['ai-rules/dependencies'],
       },
     },
     { filename: path.join(tempRoot, projectDir, relativeFile) },

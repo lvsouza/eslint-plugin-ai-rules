@@ -14,5 +14,31 @@ export const RULE_IDS = {
   sortImports: `ai-rules/${RULE_NAMES.sortImports}`,
 } as const
 
+export const BUNDLED_RULE_NAMES = {
+  noDuplicates: 'no-duplicates',
+  noDefaultExport: 'no-default-export',
+  noRelativeParentImports: 'no-relative-parent-imports',
+  semi: 'semi',
+  consistentTypeImports: 'consistent-type-imports',
+  noUnusedVars: 'no-unused-vars',
+  namingConvention: 'naming-convention',
+  dependencies: 'dependencies',
+} as const
+
+export const BUNDLED_RULE_IDS = {
+  noDuplicates: `ai-rules/${BUNDLED_RULE_NAMES.noDuplicates}`,
+  noDefaultExport: `ai-rules/${BUNDLED_RULE_NAMES.noDefaultExport}`,
+  noRelativeParentImports: `ai-rules/${BUNDLED_RULE_NAMES.noRelativeParentImports}`,
+  semi: `ai-rules/${BUNDLED_RULE_NAMES.semi}`,
+  consistentTypeImports: `ai-rules/${BUNDLED_RULE_NAMES.consistentTypeImports}`,
+  noUnusedVars: `ai-rules/${BUNDLED_RULE_NAMES.noUnusedVars}`,
+  namingConvention: `ai-rules/${BUNDLED_RULE_NAMES.namingConvention}`,
+  dependencies: `ai-rules/${BUNDLED_RULE_NAMES.dependencies}`,
+} as const
+
 export type TRuleName = (typeof RULE_NAMES)[keyof typeof RULE_NAMES]
 export type TRuleId = (typeof RULE_IDS)[keyof typeof RULE_IDS]
+export type TBundledRuleName =
+  (typeof BUNDLED_RULE_NAMES)[keyof typeof BUNDLED_RULE_NAMES]
+export type TBundledRuleId =
+  (typeof BUNDLED_RULE_IDS)[keyof typeof BUNDLED_RULE_IDS]

@@ -112,7 +112,7 @@ test('ESLint applies standard rule overrides after the generated config', async 
         rules: {
           'ai-rules/project-structure': 'off',
           'ai-rules/sort-imports': 'off',
-          '@stylistic/semi': ['warn', 'never'],
+          'ai-rules/semi': ['warn', 'never'],
         },
       },
     ],
@@ -122,7 +122,7 @@ test('ESLint applies standard rule overrides after the generated config', async 
   assert.equal(messagesFor(results, 'ai-rules/project-structure').length, 0)
   assert.equal(messagesFor(results, 'ai-rules/sort-imports').length, 0)
 
-  const semiMessages = messagesFor(results, '@stylistic/semi')
+  const semiMessages = messagesFor(results, 'ai-rules/semi')
 
   assert.ok(semiMessages.length > 0)
   assert.ok(semiMessages.every((message) => message.severity === 1))
@@ -190,7 +190,7 @@ test('ESLint applies rule overrides for boundaries', async () => {
         ],
       },
       rules: {
-        'boundaries/dependencies': 'off',
+        'ai-rules/dependencies': 'off',
       },
     },
   ])
@@ -200,7 +200,7 @@ test('ESLint applies rule overrides for boundaries', async () => {
     [projectPath('relations-overrides/src/http/controllers/InvalidController.ts')],
   )
 
-  assert.equal(messagesFor(results, 'boundaries/dependencies').length, 0)
+  assert.equal(messagesFor(results, 'ai-rules/dependencies').length, 0)
 })
 
 test('ESLint applies relations with aliases through the generated config', async () => {
@@ -259,8 +259,8 @@ test('ESLint applies relations with aliases through the generated config', async
     ],
   )
 
-  assert.equal(messagesFor(validResults, 'boundaries/dependencies').length, 0)
-  assert.equal(messagesFor(invalidResults, 'boundaries/dependencies').length, 2)
+  assert.equal(messagesFor(validResults, 'ai-rules/dependencies').length, 0)
+  assert.equal(messagesFor(invalidResults, 'ai-rules/dependencies').length, 2)
 })
 
 test('ESLint applies nested parent and child configs correctly', async () => {

@@ -99,12 +99,15 @@ npx eslint --fix .
 - [Recommended preset](#recommended-preset)
 - [Troubleshooting](#troubleshooting)
 - [Common mistakes](#common-mistakes)
+- [Migrating from 0.4.x](#migrating-from-04x)
 - [Migrating from 0.2.x](#migrating-from-02x)
 - [Development](#development)
 - [Publishing](#publishing)
 - [Articles](#articles)
 - [Contributing](#contributing)
 - [Security](#security)
+- [Credits](#credits)
+- [License](#license)
 
 ## Configuration warning
 
@@ -152,9 +155,9 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 - **Architecture relations** — enforce which layers can import which other layers, including global vs page-local scope.
 - **Monorepo friendly** — one `rootFolder` per project, including nested roots.
 - **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
-- **Named exports only** — `import-x/no-default-export` forbids default exports by default.
-- **No parent imports** — `import-x/no-relative-parent-imports` keeps modules importing through aliases or packages instead of `../`.
-- **Bundled rules** — ships with useful `import-x`, `@stylistic`, `boundaries` and `@typescript-eslint` rules.
+- **Named exports only** — `ai-rules/no-default-export` forbids default exports by default.
+- **No parent imports** — `ai-rules/no-relative-parent-imports` keeps modules importing through aliases or packages instead of `../`.
+- **Bundled rules** — all rules from the bundled plugins are re-exported under the `ai-rules` namespace.
 - **ESM + CJS** — `dist/index.js` and `dist/index.cjs`, with correct type declarations for both.
 
 ## Requirements
@@ -203,7 +206,7 @@ interface IProjectDefinition {
 - adds `ignores` from `ignoredPaths`;
 - includes the recommended rules, overridable by `rules`;
 - disables `ai-rules/filename-pascal-case`, because file naming is handled by `project-structure`;
-- when `relations` is present, registers `boundaries` and enables `boundaries/dependencies`;
+- when `relations` is present, enables `ai-rules/dependencies`;
 - applies `rules` last, so a project can disable or change any rule.
 
 ## Examples
@@ -702,7 +705,7 @@ npm i -D eslint-import-resolver-typescript
 
 For JS projects without `tsconfig.json`, the Node resolver is used.
 
-`relations` uses `eslint-plugin-boundaries` under the hood and enables `boundaries/dependencies`.
+`relations` uses `eslint-plugin-boundaries` under the hood and enables `ai-rules/dependencies`.
 
 ## Expected diagnostics
 
@@ -725,7 +728,7 @@ Relation violation:
 
 ```text
 src/http/controllers/ListProducts.ts
-  error  Dependencies to elements of type "repository" are not allowed in elements of type "controller".  boundaries/dependencies
+  error  Dependencies to elements of type "repository" are not allowed in elements of type "controller".  ai-rules/dependencies
 ```
 
 Custom relation message:
@@ -1034,31 +1037,37 @@ Groups:
 
 ## Bundled rules from other plugins
 
-`recommended` also registers and applies these rules. They existed before project structure support and remain part of the default setup.
+All rules from `import-x`, `@stylistic`, `@typescript-eslint` and `boundaries` are re-exported under the `ai-rules` namespace. `recommended` registers only the `ai-rules` plugin and applies these aliases:
 
 | Rule | Default | Purpose |
 |------|---------|---------|
-| `import-x/no-duplicates` | `error` | Prevent importing the same module twice |
-| `import-x/no-default-export` | `error` | Forbid default exports |
-| `import-x/no-relative-parent-imports` | `error` | Forbid relative imports from parent directories |
+| `ai-rules/no-duplicates` | `error` | Prevent importing the same module twice |
+| `ai-rules/no-default-export` | `error` | Forbid default exports |
+| `ai-rules/no-relative-parent-imports` | `error` | Forbid relative imports from parent directories |
 | `max-len` | `off` | No line length limit |
-| `@stylistic/semi` | `['error', 'never']` | No semicolons |
-| `@typescript-eslint/consistent-type-imports` | `['error', { prefer: 'type-imports' }]` | Prefer `import type` |
-| `@typescript-eslint/no-unused-vars` | `['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]` | Ignore unused values prefixed with `_` |
-| `@typescript-eslint/naming-convention` | interfaces `I` prefix, type aliases `T` prefix | Enforce `IUser` and `TUser` style |
+| `ai-rules/semi` | `['error', 'never']` | No semicolons |
+| `ai-rules/consistent-type-imports` | `['error', { prefer: 'type-imports' }]` | Prefer `import type` |
+| `ai-rules/no-unused-vars` | `['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]` | Ignore unused values prefixed with `_` |
+| `ai-rules/naming-convention` | interfaces `I` prefix, type aliases `T` prefix | Enforce `IUser` and `TUser` style |
 
-`import-x/no-default-export` reports both `export default` and `export { value as default }`. Framework files that require default exports, such as `eslint.config.mjs`, `*.config.*` or framework route files, must opt out:
+The alias is the original rule name, unless two plugins expose the same name. In that case the source is used as prefix:
+- `ai-rules/import-x-no-namespace` and `ai-rules/typescript-eslint-no-namespace`
+- `ai-rules/import-x-no-deprecated` and `ai-rules/typescript-eslint-no-deprecated`
+
+The original rule options, messages and docs are preserved. Settings still use the upstream names (`import-x/*`, `boundaries/*`, `import/resolver`) because the original rule implementations read those keys.
+
+`ai-rules/no-default-export` reports both `export default` and `export { value as default }`. Framework files that require default exports, such as `eslint.config.mjs`, `*.config.*` or framework route files, must opt out:
 
 ```ts
 {
   files: ['*.config.*', 'eslint.config.mjs', 'src/pages/**/*'],
   rules: {
-    'import-x/no-default-export': 'off',
+    'ai-rules/no-default-export': 'off',
   },
 }
 ```
 
-When `relations` is configured, `projects()` also registers `eslint-plugin-boundaries` and enables `boundaries/dependencies` with the generated layer policies.
+When `relations` is configured, `projects()` enables `ai-rules/dependencies` with the generated layer policies. The rule is backed by `eslint-plugin-boundaries`, and its settings remain under `boundaries/*`.
 
 The plugin also configures the `import-x` resolver with:
 
@@ -1085,10 +1094,10 @@ export default defineConfig([
       'ai-rules/sort-imports': 'off',
       'ai-rules/project-structure': 'warn',
       'ai-rules/filename-pascal-case': 'error',
-      '@stylistic/semi': ['warn', 'always'],
-      'import-x/no-default-export': 'off',
-      'import-x/no-relative-parent-imports': 'off',
-      'boundaries/dependencies': 'off',
+      'ai-rules/semi': ['warn', 'always'],
+      'ai-rules/no-default-export': 'off',
+      'ai-rules/no-relative-parent-imports': 'off',
+      'ai-rules/dependencies': 'off',
     },
   },
 ])
@@ -1117,8 +1126,8 @@ aiRules.configs.projects([
     rules: {
       'ai-rules/sort-imports': 'off',
       'ai-rules/project-structure': 'warn',
-      '@stylistic/semi': ['warn', 'always'],
-      'boundaries/dependencies': 'off',
+      'ai-rules/semi': ['warn', 'always'],
+      'ai-rules/dependencies': 'off',
     },
   },
 ])
@@ -1127,7 +1136,7 @@ aiRules.configs.projects([
 Precedence inside `projects()` is:
 
 1. `recommended` rules
-2. automatic `project-structure`, `filename-pascal-case` and `boundaries/dependencies` rules
+2. automatic `project-structure`, `filename-pascal-case` and `dependencies` rules
 3. `preset.rules`
 4. project `rules`
 5. any flat config placed after `projects()` in the ESLint config array
@@ -1151,7 +1160,7 @@ rules: {
 | `aiRules.configs.projects([...])` | recommended rules + `project-structure` |
 | `projects([...])` with `preset: 'frontend' \| 'backend'` | preset structure + preset relations |
 | `projects([...])` with `structure` | structure validation |
-| `projects([...])` with `relations` | `boundaries/dependencies` |
+| `projects([...])` with `relations` | `ai-rules/dependencies` |
 | `projects([...])` with both | structure + relations |
 
 `projects()` does **not** configure the TypeScript parser. Pair it with `typescript-eslint` as shown in the examples.
@@ -1160,7 +1169,7 @@ rules: {
 
 `aiRules.configs.recommended` is file-agnostic. It provides:
 
-- plugins: `@stylistic`, `import-x`, `@typescript-eslint`, `ai-rules`
+- plugins: `ai-rules`
 - `settings['import-x/resolver-next']`
 - the rule set documented above
 
@@ -1220,7 +1229,7 @@ Make sure you are using `aiRules.configs.projects([...])` or manually setting `s
 
 ### Type-aware rule error
 
-`@typescript-eslint/consistent-type-imports` needs the TypeScript parser. Pair the plugin with:
+`ai-rules/consistent-type-imports` needs the TypeScript parser. Pair the plugin with:
 
 ```ts
 ...tseslint.configs.recommended
@@ -1244,26 +1253,26 @@ This plugin exports flat config arrays. It does not support legacy `.eslintrc`.
 
 ### Default export is reported
 
-`import-x/no-default-export` is enabled as `error` in `recommended`. Prefer named exports, or opt out for files that require a default export:
+`ai-rules/no-default-export` is enabled as `error` in `recommended`. Prefer named exports, or opt out for files that require a default export:
 
 ```ts
 {
   files: ['*.config.*', 'src/pages/**/*'],
   rules: {
-    'import-x/no-default-export': 'off',
+    'ai-rules/no-default-export': 'off',
   },
 }
 ```
 
 ### Relative parent imports are reported
 
-`import-x/no-relative-parent-imports` is enabled as `error` in `recommended`. Prefer aliases such as `@/helpers/x` or a package, or opt out when your project intentionally uses `../`:
+`ai-rules/no-relative-parent-imports` is enabled as `error` in `recommended`. Prefer aliases such as `@/helpers/x` or a package, or opt out when your project intentionally uses `../`:
 
 ```ts
 {
   files: ['scripts/**/*'],
   rules: {
-    'import-x/no-relative-parent-imports': 'off',
+    'ai-rules/no-relative-parent-imports': 'off',
   },
 }
 ```
@@ -1317,6 +1326,25 @@ That is the default. Set `allowTypeImports: true` globally or per rule.
 ### Duplicate or overlapping roots
 
 Nested roots are supported, but duplicate roots are rejected. Use the most specific configuration for each project.
+
+## Migrating from 0.4.x
+
+Bundled rules moved from their upstream namespaces to `ai-rules`. Replace the old IDs in `rules` overrides:
+
+| Before | After |
+|--------|-------|
+| `import-x/no-duplicates` | `ai-rules/no-duplicates` |
+| `import-x/no-default-export` | `ai-rules/no-default-export` |
+| `import-x/no-relative-parent-imports` | `ai-rules/no-relative-parent-imports` |
+| `@stylistic/semi` | `ai-rules/semi` |
+| `@typescript-eslint/consistent-type-imports` | `ai-rules/consistent-type-imports` |
+| `@typescript-eslint/no-unused-vars` | `ai-rules/no-unused-vars` |
+| `@typescript-eslint/naming-convention` | `ai-rules/naming-convention` |
+| `boundaries/dependencies` | `ai-rules/dependencies` |
+
+For any other bundled rule, drop the plugin prefix and use `ai-rules/<rule-name>`. The only exceptions are `no-namespace` and `no-deprecated`, which exist in both `import-x` and `@typescript-eslint`; use `ai-rules/import-x-<rule-name>` or `ai-rules/typescript-eslint-<rule-name>`.
+
+If you use settings directly, keep the upstream keys (`import-x/*` and `boundaries/*`).
 
 ## Migrating from 0.2.x
 
@@ -1469,6 +1497,10 @@ See [SECURITY.md](SECURITY.md) for supported versions and private vulnerability 
 ## Articles
 
 - [How I forced AI to follow the project standard with ESLint](docs/tabnews-eslint-plugin-ai-rules.md)
+
+## Credits
+
+Third-party libraries and their licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## License
 

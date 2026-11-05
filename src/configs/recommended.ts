@@ -1,19 +1,14 @@
-import { createNodeResolver, importX } from 'eslint-plugin-import-x'
-import stylistic from '@stylistic/eslint-plugin'
-import tseslint from 'typescript-eslint'
+import { createNodeResolver } from 'eslint-plugin-import-x'
 import type { Linter } from 'eslint'
 
-import { RULE_IDS } from '@/rules/constants'
+import { BUNDLED_RULE_IDS, RULE_IDS } from '@/rules/constants'
 import { plugin } from '@/plugin'
 
 
 export const recommended: Linter.Config[] = [
   {
     plugins: {
-      '@stylistic': stylistic,
-      'import-x': importX,
       'ai-rules': plugin,
-      '@typescript-eslint': tseslint.plugin,
     },
     settings: {
       'import-x/resolver-next': [
@@ -28,19 +23,19 @@ export const recommended: Linter.Config[] = [
       [RULE_IDS.filenamePascalCase]: 'error',
       [RULE_IDS.projectSetup]: 'warn',
       'max-len': 'off',
-      'import-x/no-duplicates': 'error',
-      'import-x/no-default-export': 'error',
-      'import-x/no-relative-parent-imports': 'error',
-      '@stylistic/semi': ['error', 'never'],
-      '@typescript-eslint/consistent-type-imports': [
+      [BUNDLED_RULE_IDS.noDuplicates]: 'error',
+      [BUNDLED_RULE_IDS.noDefaultExport]: 'error',
+      [BUNDLED_RULE_IDS.noRelativeParentImports]: 'error',
+      [BUNDLED_RULE_IDS.semi]: ['error', 'never'],
+      [BUNDLED_RULE_IDS.consistentTypeImports]: [
         'error',
         { prefer: 'type-imports' },
       ],
-      '@typescript-eslint/no-unused-vars': [
+      [BUNDLED_RULE_IDS.noUnusedVars]: [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      '@typescript-eslint/naming-convention': [
+      [BUNDLED_RULE_IDS.namingConvention]: [
         'error',
         { selector: 'interface', format: ['PascalCase'], prefix: ['I'] },
         { selector: 'typeAlias', format: ['PascalCase'], prefix: ['T'] },

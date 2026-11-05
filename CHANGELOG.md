@@ -2,10 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- `THIRD_PARTY_NOTICES.md` listing the direct third-party dependencies, their licenses and repositories. The file is included in the published package.
+
 ### Changed
 
-- `import-x/no-default-export` is now enabled as `error` in `recommended` and inherited by `projects()`. This is a breaking change for projects that use default exports; opt out per file or rule when a framework requires them.
-- `import-x/no-relative-parent-imports` is now enabled as `error` in `recommended` and inherited by `projects()`. This is a breaking change for projects that import through `../`; use aliases or packages, or opt out per file or rule.
+- All rules from `import-x`, `@stylistic`, `@typescript-eslint` and `boundaries` are now re-exported under the `ai-rules` namespace. `recommended` and `projects()` register only `ai-rules`. This is a breaking change: upstream rule IDs are no longer registered by the generated configs, so overrides must use `ai-rules/*`. Upstream settings keys such as `import-x/*` and `boundaries/*` remain unchanged.
+- `ai-rules/no-default-export` and `ai-rules/no-relative-parent-imports` are enabled as `error` in `recommended` and inherited by `projects()`. This is a breaking change for projects that use default exports or import through `../`; use aliases or packages, or opt out per file or rule.
 
 ### Fixed
 

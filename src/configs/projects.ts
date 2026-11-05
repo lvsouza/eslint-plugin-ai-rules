@@ -1,4 +1,3 @@
-import boundaries from 'eslint-plugin-boundaries'
 import type { Linter } from 'eslint'
 import path from 'node:path'
 
@@ -7,10 +6,10 @@ import { buildRelationsRuleOptions, buildRelationsSettings } from '@/structures/
 import { hasStructureRules } from '@/structures/hasStructureRules'
 import { validateRelations } from '@/structures/validateRelations'
 import { validateStructure } from '@/structures/validateStructure'
+import { BUNDLED_RULE_IDS, RULE_IDS } from '@/rules/constants'
 import { mergeRelations } from '@/structures/mergeRelations'
 import { mergeStructure } from '@/structures/mergeStructure'
 import { getPreset } from '@/structures/presets'
-import { RULE_IDS } from '@/rules/constants'
 import { recommended } from './recommended'
 
 
@@ -184,7 +183,7 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
         : baseConfig.rules?.[RULE_IDS.filenamePascalCase] ?? 'error',
       ...(relations
         ? {
-            'boundaries/dependencies': [
+            [BUNDLED_RULE_IDS.dependencies]: [
               'error',
               buildRelationsRuleOptions(relations),
             ],
@@ -198,7 +197,6 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
       ...baseConfig,
       plugins: {
         ...baseConfig.plugins,
-        ...(relations ? { boundaries } : {}),
       },
       files: [`${rootPrefix}**/*.{js,cjs,mjs,jsx,ts,tsx}`],
       ...(ignoredPaths.length > 0 ? { ignores: ignoredPaths } : {}),

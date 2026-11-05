@@ -24,26 +24,32 @@ test('ESM exports are wired correctly', () => {
   assert.equal(plugin.rules['project-setup'], projectSetup)
   assert.equal(plugin.rules['project-structure'], projectStructure)
   assert.equal(recommended[0].rules['ai-rules/project-setup'], 'warn')
-  assert.equal(recommended[0].rules['import-x/no-default-export'], 'error')
+  assert.equal(recommended[0].rules['ai-rules/no-default-export'], 'error')
   assert.equal(
-    recommended[0].rules['import-x/no-relative-parent-imports'],
+    recommended[0].rules['ai-rules/no-relative-parent-imports'],
     'error',
   )
+  assert.deepEqual(Object.keys(recommended[0].plugins), ['ai-rules'])
+  assert.ok(aiRules.rules['no-duplicates'])
+  assert.ok(aiRules.rules['semi'])
+  assert.ok(aiRules.rules['dependencies'])
   assert.deepEqual(Object.keys(presets), ['frontend', 'backend', 'other'])
 })
 
 test('rule names are stable and kebab-cased', () => {
-  const ruleNames = Object.keys(aiRules.rules).sort()
-
-  assert.deepEqual(ruleNames, [
+  const ownRuleNames = [
     'filename-pascal-case',
     'no-multiline-imports',
     'project-setup',
     'project-structure',
     'sort-imports',
-  ])
+  ]
 
-  for (const ruleName of ruleNames) {
+  for (const ruleName of ownRuleNames) {
+    assert.ok(aiRules.rules[ruleName], ruleName)
+  }
+
+  for (const ruleName of Object.keys(aiRules.rules)) {
     assert.match(ruleName, /^[a-z]+(?:-[a-z]+)*$/)
   }
 
@@ -53,9 +59,16 @@ test('rule names are stable and kebab-cased', () => {
     .sort()
 
   assert.deepEqual(recommendedRuleNames, [
+    'consistent-type-imports',
     'filename-pascal-case',
+    'naming-convention',
+    'no-default-export',
+    'no-duplicates',
     'no-multiline-imports',
+    'no-relative-parent-imports',
+    'no-unused-vars',
     'project-setup',
+    'semi',
     'sort-imports',
   ])
 })
@@ -77,7 +90,7 @@ test('build artifacts and package metadata exist', () => {
   assert.equal(packageJson.main, './dist/index.cjs')
   assert.equal(packageJson.module, './dist/index.js')
   assert.equal(packageJson.types, './dist/index.d.ts')
-  assert.deepEqual(packageJson.files, ['dist'])
+  assert.deepEqual(packageJson.files, ['dist', 'THIRD_PARTY_NOTICES.md'])
   assert.deepEqual(packageJson.exports['.'], {
     import: {
       types: './dist/index.d.ts',

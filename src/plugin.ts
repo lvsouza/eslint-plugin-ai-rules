@@ -3,6 +3,7 @@ import { noMultilineImports } from './rules/NoMultilineImports'
 import { projectStructure } from './rules/ProjectStructure'
 import { projectSetup } from './rules/ProjectSetup'
 import { sortImports } from './rules/SortImports'
+import { bundledRules } from './rules/bundled'
 import { RULE_NAMES } from './rules/constants'
 
 
@@ -15,6 +16,7 @@ export const plugin = {
     version: __AI_RULES_VERSION__,
   },
   rules: {
+    ...bundledRules,
     [RULE_NAMES.filenamePascalCase]: filenamePascalCase,
     [RULE_NAMES.noMultilineImports]: noMultilineImports,
     [RULE_NAMES.projectSetup]: projectSetup,

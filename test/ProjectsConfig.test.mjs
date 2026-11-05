@@ -18,9 +18,9 @@ test('creates a frontend config from a preset', () => {
   assert.deepEqual(config.files, ['**/*.{js,cjs,mjs,jsx,ts,tsx}'])
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'off')
-  assert.equal(config.rules['import-x/no-default-export'], 'error')
+  assert.equal(config.rules['ai-rules/no-default-export'], 'error')
   assert.equal(
-    config.rules['import-x/no-relative-parent-imports'],
+    config.rules['ai-rules/no-relative-parent-imports'],
     'error',
   )
   assert.ok(config.ignores.includes('src/shared/services/generated/**'))
@@ -77,7 +77,8 @@ test('builds boundaries config from relations', () => {
     },
   ])
 
-  assert.ok(config.plugins.boundaries)
+  assert.ok(config.plugins['ai-rules'])
+  assert.equal(config.plugins.boundaries, undefined)
   assert.equal(config.settings['boundaries/root-path'], process.cwd())
   assert.deepEqual(config.settings['boundaries/elements'], [
     {
@@ -91,7 +92,7 @@ test('builds boundaries config from relations', () => {
       partialMatch: false,
     },
   ])
-  assert.equal(config.rules['boundaries/dependencies'][0], 'error')
+  assert.equal(config.rules['ai-rules/dependencies'][0], 'error')
   assert.ok(config.settings['import/resolver'])
   assert.equal(
     projectSettings(config).relations.layers.controller,
@@ -120,8 +121,9 @@ test('combines preset structure with relations', () => {
   ])
 
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
-  assert.equal(config.rules['boundaries/dependencies'][0], 'error')
-  assert.ok(config.plugins.boundaries)
+  assert.equal(config.rules['ai-rules/dependencies'][0], 'error')
+  assert.ok(config.plugins['ai-rules'])
+  assert.equal(config.plugins.boundaries, undefined)
   assert.ok(projectSettings(config).structure.folders.src)
   assert.ok(projectSettings(config).relations)
 })
@@ -231,9 +233,9 @@ test('project rules override recommended and structural defaults', () => {
         'ai-rules/sort-imports': 'off',
         'ai-rules/project-structure': 'warn',
         'ai-rules/filename-pascal-case': 'error',
-        'import-x/no-default-export': 'off',
-        'import-x/no-relative-parent-imports': 'off',
-        '@stylistic/semi': ['warn', 'always'],
+        'ai-rules/no-default-export': 'off',
+        'ai-rules/no-relative-parent-imports': 'off',
+        'ai-rules/semi': ['warn', 'always'],
       },
     },
   ])
@@ -241,9 +243,9 @@ test('project rules override recommended and structural defaults', () => {
   assert.equal(config.rules['ai-rules/sort-imports'], 'off')
   assert.equal(config.rules['ai-rules/project-structure'], 'warn')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'error')
-  assert.equal(config.rules['import-x/no-default-export'], 'off')
-  assert.equal(config.rules['import-x/no-relative-parent-imports'], 'off')
-  assert.deepEqual(config.rules['@stylistic/semi'], ['warn', 'always'])
+  assert.equal(config.rules['ai-rules/no-default-export'], 'off')
+  assert.equal(config.rules['ai-rules/no-relative-parent-imports'], 'off')
+  assert.deepEqual(config.rules['ai-rules/semi'], ['warn', 'always'])
 })
 
 test('project rules override boundaries defaults', () => {
@@ -264,12 +266,12 @@ test('project rules override boundaries defaults', () => {
         ],
       },
       rules: {
-        'boundaries/dependencies': 'off',
+        'ai-rules/dependencies': 'off',
       },
     },
   ])
 
-  assert.equal(config.rules['boundaries/dependencies'], 'off')
+  assert.equal(config.rules['ai-rules/dependencies'], 'off')
 })
 
 test('structure overrides preset files but preserves preset folders', () => {

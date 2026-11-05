@@ -70,8 +70,8 @@ function lint(config, relativeFile, code) {
       settings: config.settings,
       languageOptions: { parser: tseslint.parser },
       rules: {
-        'boundaries/dependencies':
-          config.rules['boundaries/dependencies'],
+        'ai-rules/dependencies':
+          config.rules['ai-rules/dependencies'],
       },
     },
     { filename: path.join(tempRoot, relativeFile) },
@@ -390,8 +390,8 @@ test('works for JS projects without tsconfig', () => {
           sourceType: 'module',
         },
         rules: {
-          'boundaries/dependencies':
-            config.rules['boundaries/dependencies'],
+          'ai-rules/dependencies':
+            config.rules['ai-rules/dependencies'],
         },
       },
       {

@@ -29,9 +29,9 @@ function verify(relativeFilename, code, overrides = []) {
         rules: {
           'ai-rules/project-setup': 'off',
           'ai-rules/filename-pascal-case': 'off',
-          '@typescript-eslint/consistent-type-imports': 'off',
-          '@typescript-eslint/naming-convention': 'off',
-          '@typescript-eslint/no-unused-vars': 'off',
+          'ai-rules/consistent-type-imports': 'off',
+          'ai-rules/naming-convention': 'off',
+          'ai-rules/no-unused-vars': 'off',
         },
       },
       ...overrides,
@@ -42,7 +42,7 @@ function verify(relativeFilename, code, overrides = []) {
 
 function parentImportMessages(messages) {
   return messages.filter(
-    (message) => message.ruleId === 'import-x/no-relative-parent-imports',
+    (message) => message.ruleId === 'ai-rules/no-relative-parent-imports',
   )
 }
 
@@ -83,7 +83,7 @@ test('can be disabled with a later flat config', () => {
 
   const messages = parentImportMessages(
     verify('src/child/Child.ts', "import { value } from '../Parent'\n", [
-      { rules: { 'import-x/no-relative-parent-imports': 'off' } },
+      { rules: { 'ai-rules/no-relative-parent-imports': 'off' } },
     ]),
   )
 

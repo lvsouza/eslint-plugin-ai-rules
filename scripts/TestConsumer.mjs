@@ -301,13 +301,13 @@ try {
   assertFailure(
     runEslint('src/http/controllers/InvalidController.ts'),
     'consumer eslint invalid relation',
-    'boundaries/dependencies',
+    'ai-rules/dependencies',
   )
 
   assertFailure(
     runEslint('src/http/controllers/TypeController.ts'),
     'consumer eslint blocked type-only relation',
-    'boundaries/dependencies',
+    'ai-rules/dependencies',
   )
 
   writeConfig(relationsConfig(true))
@@ -328,7 +328,7 @@ try {
   assertFailure(
     runEslint('src/Default.ts'),
     'consumer eslint default export',
-    'import-x/no-default-export',
+    'ai-rules/no-default-export',
   )
 
   writeConfig(otherConfig())

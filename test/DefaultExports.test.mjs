@@ -17,8 +17,8 @@ function verify(code, overrides = []) {
       {
         rules: {
           'ai-rules/project-setup': 'off',
-          '@typescript-eslint/consistent-type-imports': 'off',
-          '@typescript-eslint/naming-convention': 'off',
+          'ai-rules/consistent-type-imports': 'off',
+          'ai-rules/naming-convention': 'off',
         },
       },
       ...overrides,
@@ -29,7 +29,7 @@ function verify(code, overrides = []) {
 
 function defaultExportMessages(messages) {
   return messages.filter(
-    (message) => message.ruleId === 'import-x/no-default-export',
+    (message) => message.ruleId === 'ai-rules/no-default-export',
   )
 }
 
@@ -59,7 +59,7 @@ test('reports values aliased as default', () => {
 
 test('can be disabled with a later flat config', () => {
   const messages = verify('export default 1\n', [
-    { rules: { 'import-x/no-default-export': 'off' } },
+    { rules: { 'ai-rules/no-default-export': 'off' } },
   ])
 
   assert.equal(defaultExportMessages(messages).length, 0)
