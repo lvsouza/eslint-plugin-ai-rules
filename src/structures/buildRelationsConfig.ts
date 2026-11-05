@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
-import type { IRelationsConfig, IRelationsRule, IRelationsScope, } from '../types/structure'
+import type { IRelationsConfig, IRelationsRule, IRelationsScope, } from '@/types/structure'
 
 
 function layerPatterns(

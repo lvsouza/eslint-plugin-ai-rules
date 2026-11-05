@@ -5,6 +5,7 @@
 ### Changed
 
 - `import-x/no-default-export` is now enabled as `error` in `recommended` and inherited by `projects()`. This is a breaking change for projects that use default exports; opt out per file or rule when a framework requires them.
+- `import-x/no-relative-parent-imports` is now enabled as `error` in `recommended` and inherited by `projects()`. This is a breaking change for projects that import through `../`; use aliases or packages, or opt out per file or rule.
 
 ### Fixed
 

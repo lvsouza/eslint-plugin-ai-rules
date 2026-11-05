@@ -1,5 +1,5 @@
-import type { IProjectStructure } from '../types/structure'
-import { isNameCase } from '../utils/matchNameRule'
+import type { IProjectStructure } from '@/types/structure'
+import { isNameCase } from '@/utils/matchNameRule'
 
 
 const DYNAMIC_FOLDER_PATTERN = /^\[.+\]$/

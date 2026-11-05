@@ -19,6 +19,10 @@ test('creates a frontend config from a preset', () => {
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'off')
   assert.equal(config.rules['import-x/no-default-export'], 'error')
+  assert.equal(
+    config.rules['import-x/no-relative-parent-imports'],
+    'error',
+  )
   assert.ok(config.ignores.includes('src/shared/services/generated/**'))
   assert.equal(projectSettings(config).preset, 'frontend')
   assert.ok(projectSettings(config).structure.folders.src)
@@ -228,6 +232,7 @@ test('project rules override recommended and structural defaults', () => {
         'ai-rules/project-structure': 'warn',
         'ai-rules/filename-pascal-case': 'error',
         'import-x/no-default-export': 'off',
+        'import-x/no-relative-parent-imports': 'off',
         '@stylistic/semi': ['warn', 'always'],
       },
     },
@@ -237,6 +242,7 @@ test('project rules override recommended and structural defaults', () => {
   assert.equal(config.rules['ai-rules/project-structure'], 'warn')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'error')
   assert.equal(config.rules['import-x/no-default-export'], 'off')
+  assert.equal(config.rules['import-x/no-relative-parent-imports'], 'off')
   assert.deepEqual(config.rules['@stylistic/semi'], ['warn', 'always'])
 })
 

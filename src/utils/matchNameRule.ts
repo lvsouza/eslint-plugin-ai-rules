@@ -1,4 +1,4 @@
-import type { INameRule, TNameCase } from '../types/structure'
+import type { INameRule, TNameCase } from '@/types/structure'
 
 
 const CASE_PATTERNS: Record<TNameCase, RegExp> = {

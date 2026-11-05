@@ -153,6 +153,7 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 - **Monorepo friendly** — one `rootFolder` per project, including nested roots.
 - **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
 - **Named exports only** — `import-x/no-default-export` forbids default exports by default.
+- **No parent imports** — `import-x/no-relative-parent-imports` keeps modules importing through aliases or packages instead of `../`.
 - **Bundled rules** — ships with useful `import-x`, `@stylistic`, `boundaries` and `@typescript-eslint` rules.
 - **ESM + CJS** — `dist/index.js` and `dist/index.cjs`, with correct type declarations for both.
 
@@ -1039,6 +1040,7 @@ Groups:
 |------|---------|---------|
 | `import-x/no-duplicates` | `error` | Prevent importing the same module twice |
 | `import-x/no-default-export` | `error` | Forbid default exports |
+| `import-x/no-relative-parent-imports` | `error` | Forbid relative imports from parent directories |
 | `max-len` | `off` | No line length limit |
 | `@stylistic/semi` | `['error', 'never']` | No semicolons |
 | `@typescript-eslint/consistent-type-imports` | `['error', { prefer: 'type-imports' }]` | Prefer `import type` |
@@ -1085,6 +1087,7 @@ export default defineConfig([
       'ai-rules/filename-pascal-case': 'error',
       '@stylistic/semi': ['warn', 'always'],
       'import-x/no-default-export': 'off',
+      'import-x/no-relative-parent-imports': 'off',
       'boundaries/dependencies': 'off',
     },
   },
@@ -1248,6 +1251,19 @@ This plugin exports flat config arrays. It does not support legacy `.eslintrc`.
   files: ['*.config.*', 'src/pages/**/*'],
   rules: {
     'import-x/no-default-export': 'off',
+  },
+}
+```
+
+### Relative parent imports are reported
+
+`import-x/no-relative-parent-imports` is enabled as `error` in `recommended`. Prefer aliases such as `@/helpers/x` or a package, or opt out when your project intentionally uses `../`:
+
+```ts
+{
+  files: ['scripts/**/*'],
+  rules: {
+    'import-x/no-relative-parent-imports': 'off',
   },
 }
 ```

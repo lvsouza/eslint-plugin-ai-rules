@@ -1,6 +1,6 @@
 import { describeNameRule, matchesNameRule } from './matchNameRule'
 import { matchPathPattern } from './matchPathPattern'
-import type { TFileRule } from '../types/structure'
+import type { TFileRule } from '@/types/structure'
 
 
 export function getMatchingExtension(

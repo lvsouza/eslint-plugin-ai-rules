@@ -18,7 +18,10 @@
     "skipLibCheck": true,
     "noEmit": false,
     "allowImportingTsExtensions": false,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]

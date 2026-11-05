@@ -1,4 +1,4 @@
-import type { IProjectPreset, TProjectPreset } from '../../types/structure'
+import type { IProjectPreset, TProjectPreset } from '@/types/structure'
 import { frontendPreset } from './frontend'
 import { backendPreset } from './backend'
 import { otherPreset } from './other'

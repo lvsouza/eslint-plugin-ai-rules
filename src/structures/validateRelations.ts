@@ -1,4 +1,4 @@
-import type { IRelationsConfig } from '../types/structure'
+import type { IRelationsConfig } from '@/types/structure'
 
 
 function isRecord(value: unknown): value is Record<string, unknown> {

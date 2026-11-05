@@ -3,8 +3,8 @@ import stylistic from '@stylistic/eslint-plugin'
 import tseslint from 'typescript-eslint'
 import type { Linter } from 'eslint'
 
-import { RULE_IDS } from '../rules/constants'
-import { plugin } from '../plugin'
+import { RULE_IDS } from '@/rules/constants'
+import { plugin } from '@/plugin'
 
 
 export const recommended: Linter.Config[] = [
@@ -30,6 +30,7 @@ export const recommended: Linter.Config[] = [
       'max-len': 'off',
       'import-x/no-duplicates': 'error',
       'import-x/no-default-export': 'error',
+      'import-x/no-relative-parent-imports': 'error',
       '@stylistic/semi': ['error', 'never'],
       '@typescript-eslint/consistent-type-imports': [
         'error',

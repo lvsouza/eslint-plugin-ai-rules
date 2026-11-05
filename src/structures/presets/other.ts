@@ -1,4 +1,4 @@
-import type { IProjectPreset } from '../../types/structure'
+import type { IProjectPreset } from '@/types/structure'
 
 
 export const otherPreset: IProjectPreset = {

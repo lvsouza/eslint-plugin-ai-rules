@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint'
 
-import type { IAiRulesSettings, IResolvedProject } from '../types/structure'
-import { hasStructureRules } from '../structures/hasStructureRules'
+import type { IAiRulesSettings, IResolvedProject } from '@/types/structure'
+import { hasStructureRules } from '@/structures/hasStructureRules'
 
 
 let hasReported = false

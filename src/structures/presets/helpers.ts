@@ -1,4 +1,4 @@
-import type { TFileRule } from '../../types/structure'
+import type { TFileRule } from '@/types/structure'
 
 
 export const pascalTs: TFileRule = {

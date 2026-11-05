@@ -1,4 +1,4 @@
-import type { INameRule, IProjectStructure, IStructureNode, TFileRule, } from '../types/structure'
+import type { INameRule, IProjectStructure, IStructureNode, TFileRule, } from '@/types/structure'
 
 
 function cloneFileRule(rule: TFileRule): TFileRule {

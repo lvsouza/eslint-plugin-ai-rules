@@ -1,4 +1,4 @@
-import type { IProjectPreset, IRelationsConfig } from '../../types/structure'
+import type { IProjectPreset, IRelationsConfig } from '@/types/structure'
 import { commonIgnoredPaths, pascalTs } from './helpers'
 
 

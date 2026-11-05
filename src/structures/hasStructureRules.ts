@@ -1,4 +1,4 @@
-import type { IProjectStructure } from '../types/structure'
+import type { IProjectStructure } from '@/types/structure'
 
 
 export function hasStructureRules(structure: IProjectStructure): boolean {

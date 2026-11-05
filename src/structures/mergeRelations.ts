@@ -1,4 +1,4 @@
-import type { IRelationsConfig, IRelationsRule, IRelationsScope, } from '../types/structure'
+import type { IRelationsConfig, IRelationsRule, IRelationsScope, } from '@/types/structure'
 
 
 function cloneLayerPaths(paths: string | string[]): string | string[] {

@@ -1,10 +1,10 @@
 import type { Rule } from 'eslint'
 import path from 'node:path'
 
-import { describeFileRule, fileRuleMatchesExtension, matchesFileRule, } from '../utils/matchFileRule'
-import type { IAiRulesSettings, IResolvedProject, IStructureNode, } from '../types/structure'
-import { describeNameRule, matchesNameRule } from '../utils/matchNameRule'
-import { matchPathPattern } from '../utils/matchPathPattern'
+import { describeFileRule, fileRuleMatchesExtension, matchesFileRule, } from '@/utils/matchFileRule'
+import type { IAiRulesSettings, IResolvedProject, IStructureNode, } from '@/types/structure'
+import { describeNameRule, matchesNameRule } from '@/utils/matchNameRule'
+import { matchPathPattern } from '@/utils/matchPathPattern'
 
 
 const DYNAMIC_FOLDER_PATTERN = /^\[.+\]$/
