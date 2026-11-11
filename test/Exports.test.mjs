@@ -33,7 +33,7 @@ test('ESM exports are wired correctly', () => {
   assert.ok(aiRules.rules['no-duplicates'])
   assert.ok(aiRules.rules['semi'])
   assert.ok(aiRules.rules['dependencies'])
-  assert.deepEqual(Object.keys(presets), ['frontend', 'backend', 'other'])
+  assert.deepEqual(Object.keys(presets), ['frontend', 'nextjs', 'backend', 'other'])
 })
 
 test('rule names are stable and kebab-cased', () => {
@@ -78,7 +78,7 @@ test('CJS exports are wired correctly', () => {
   assert.equal(typeof cjs.projects, 'function')
   assert.equal(cjs.default.rules['project-setup'], cjs.projectSetup)
   assert.equal(cjs.default.rules['project-structure'], cjs.projectStructure)
-  assert.deepEqual(Object.keys(cjs.presets), ['frontend', 'backend', 'other'])
+  assert.deepEqual(Object.keys(cjs.presets), ['frontend', 'nextjs', 'backend', 'other'])
 })
 
 test('build artifacts and package metadata exist', () => {

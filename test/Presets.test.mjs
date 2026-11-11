@@ -64,6 +64,40 @@ const invalidFrontendPaths = [
   ['random.ts', 'fileNotAllowed'],
 ]
 
+const validNextjsPaths = [
+  'src/app/layout.tsx',
+  'src/app/page.tsx',
+  'src/app/loading.tsx',
+  'src/app/error.tsx',
+  'src/app/global-error.tsx',
+  'src/app/not-found.tsx',
+  'src/app/template.tsx',
+  'src/app/default.tsx',
+  'src/app/route.ts',
+  'src/app/sitemap.ts',
+  'src/app/robots.ts',
+  'src/app/manifest.ts',
+  'src/app/opengraph-image.tsx',
+  'src/app/icon.tsx',
+  'src/app/providers.tsx',
+  'src/app/(marketing)/page.tsx',
+  'src/app/(shop)/products/[slug]/page.tsx',
+  'src/app/blog/[...slugs]/page.tsx',
+  'src/app/dashboard/@modal/default.tsx',
+  'src/app/api/users/route.ts',
+  'src/middleware.ts',
+  'src/instrumentation.ts',
+  'src/shared/components/ui/Button.tsx',
+  'src/pages/orders/Orders.tsx',
+]
+
+const invalidNextjsPaths = [
+  ['app/page.tsx', 'folderNotAllowed'],
+  ['src/app/dashboard/Button.tsx', 'fileNotAllowed'],
+  ['src/app/page.js', 'fileNotAllowed'],
+  ['src/pages/MyFeature/Dashboard.tsx', 'folderNameMismatch'],
+]
+
 const validBackendPaths = [
   'src/index.ts',
   'src/Server.ts',
@@ -112,6 +146,21 @@ test('frontend preset accepts reference paths', () => {
 test('frontend preset reports known violations', () => {
   for (const [filename, messageId] of invalidFrontendPaths) {
     const messages = lint(filename, presets.frontend.structure)
+
+    assert.equal(messages.length, 1, filename)
+    assert.equal(messages[0].messageId, messageId, filename)
+  }
+})
+
+test('nextjs preset accepts reference paths', () => {
+  for (const filename of validNextjsPaths) {
+    assert.equal(lint(filename, presets.nextjs.structure).length, 0, filename)
+  }
+})
+
+test('nextjs preset reports known violations', () => {
+  for (const [filename, messageId] of invalidNextjsPaths) {
+    const messages = lint(filename, presets.nextjs.structure)
 
     assert.equal(messages.length, 1, filename)
     assert.equal(messages[0].messageId, messageId, filename)

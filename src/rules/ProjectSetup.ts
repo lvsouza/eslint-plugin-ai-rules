@@ -11,6 +11,7 @@ function isConfiguredProject(project: IResolvedProject): boolean {
 
   if (
     project.preset === 'frontend' ||
+    project.preset === 'nextjs' ||
     project.preset === 'backend' ||
     project.preset === 'other'
   ) {
@@ -45,7 +46,7 @@ export const projectSetup: Rule.RuleModule = {
     schema: [],
     messages: {
       notConfigured:
-        'Project structure validation is not configured. Configure it with aiRules.configs.projects([{ rootFolder: ".", preset: "frontend" | "backend" }]). If this project is not a frontend/backend, use preset: "other" to disable this warning.',
+        'Project structure validation is not configured. Configure it with aiRules.configs.projects([{ rootFolder: ".", preset: "frontend" | "nextjs" | "backend" }]). If this project is not a frontend/nextjs/backend, use preset: "other" to disable this warning.',
     },
   },
   create(context) {

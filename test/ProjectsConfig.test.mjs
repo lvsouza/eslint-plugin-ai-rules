@@ -1029,8 +1029,20 @@ test('validates relations declarations', () => {
 
 test('presets are exported', () => {
   assert.ok(presets.frontend.structure.folders.src)
+  assert.ok(presets.nextjs.structure.folders.src.folders.app)
   assert.ok(presets.backend.structure.folders.src)
   assert.ok(presets.frontend.relations)
+  assert.ok(presets.nextjs.relations)
   assert.ok(presets.backend.relations)
   assert.deepEqual(presets.other.structure, {})
+})
+
+test('creates a nextjs config from a preset', () => {
+  const [config] = projects([
+    { rootFolder: '.', preset: 'nextjs' },
+  ])
+
+  assert.equal(config.rules['ai-rules/project-structure'], 'error')
+  assert.equal(projectSettings(config).preset, 'nextjs')
+  assert.ok(projectSettings(config).structure.folders.src.folders.app)
 })

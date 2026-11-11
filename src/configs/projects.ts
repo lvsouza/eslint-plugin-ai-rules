@@ -13,7 +13,7 @@ import { getPreset } from '@/structures/presets'
 import { recommended } from './recommended'
 
 
-const PROJECT_PRESETS: TProjectPreset[] = ['frontend', 'backend', 'other']
+const PROJECT_PRESETS: TProjectPreset[] = ['frontend', 'nextjs', 'backend', 'other']
 
 function normalizeRootFolder(rootFolder: string): string {
   const absolutePath = path.resolve(process.cwd(), rootFolder.trim())

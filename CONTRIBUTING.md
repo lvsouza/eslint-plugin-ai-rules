@@ -60,11 +60,11 @@ Rules enabled by `recommended` should also set `meta.docs.recommended: true`.
 
 ## Release process
 
-Releases are manual and triggered by a version tag:
+Releases are triggered by pushing a new version to `main`:
 
 1. Update `package.json` and `CHANGELOG.md`.
 2. Run `yarn test:release`.
-3. Create and push a tag such as `v0.4.0`.
-4. The release workflow runs all checks and publishes to npm with provenance, then creates a GitHub release.
+3. Commit and push the changes to `main`.
+4. `.github/workflows/publish.yml` detects the version change, runs lint, typecheck, tests and build, publishes to npm and creates/pushes the matching `v<version>` tag automatically.
 
-Never publish locally without the release workflow unless explicitly necessary.
+If the version is already on npm but the tag is missing, pushing to `main` again creates the missing tag without republishing. Never publish locally without the release workflow unless explicitly necessary.

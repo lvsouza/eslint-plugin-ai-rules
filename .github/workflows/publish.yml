@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.check.outputs.changed }}
+      version: ${{ steps.check.outputs.version }}
+      tag_missing: ${{ steps.check.outputs.tag_missing }}
 
     steps:
       - name: Checkout
@@ -21,11 +23,18 @@ jobs:
           PUBLISHED=$(npm view eslint-plugin-ai-rules version 2>/dev/null || echo "none")
 
           echo "Current: $CURRENT | Published: $PUBLISHED"
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
 
           if [ "$CURRENT" != "$PUBLISHED" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/v$CURRENT" >/dev/null 2>&1; then
+            echo "tag_missing=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_missing=true" >> "$GITHUB_OUTPUT"
           fi
 
   verify:
@@ -86,3 +95,37 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  tag:
+    needs: [check, publish]
+    if: |
+      always() &&
+      needs.check.result == 'success' &&
+      needs.check.outputs.tag_missing == 'true' &&
+      (needs.check.outputs.changed == 'false' || needs.publish.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create and push tag
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          TAG="v${VERSION}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Tag ${TAG} already exists."
+            exit 0
+          fi
+
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "${TAG}"

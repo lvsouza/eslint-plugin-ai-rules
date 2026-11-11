@@ -2,7 +2,7 @@ import { commonIgnoredPaths, pascalTs, pascalTsOrTsx, pascalTsx } from './helper
 import type { IProjectPreset, IRelationsConfig } from '@/types/structure'
 
 
-const frontendRelations: IRelationsConfig = {
+export const frontendRelations: IRelationsConfig = {
   layers: {
     pageComponent: ['src/pages/*/components', 'src/pages/*/tabs'],
     pageHook: 'src/pages/*/hooks',
@@ -34,16 +34,7 @@ const frontendRelations: IRelationsConfig = {
   rules: [
     {
       from: 'components',
-      allow: [
-        'hooks',
-        'contexts',
-        'services',
-        'generated',
-        'utils',
-        'helpers',
-        'constants',
-        'env',
-      ],
+      allow: [],
       allowSameLayer: true,
     },
     {

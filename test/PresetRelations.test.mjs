@@ -36,13 +36,18 @@ after(() => {
 
 const backendDir = 'backend'
 const frontendDir = 'frontend'
+const nextjsDir = 'nextjs'
 const backendRoot = `${relativeTempRoot}/${backendDir}`
 const frontendRoot = `${relativeTempRoot}/${frontendDir}`
+const nextjsRoot = `${relativeTempRoot}/${nextjsDir}`
 
 writeProjectJson(backendDir, 'tsconfig.json', {
   compilerOptions: { paths: { '@/*': ['./src/*'] } },
 })
 writeProjectJson(frontendDir, 'tsconfig.json', {
+  compilerOptions: { paths: { '@/*': ['./src/*'] } },
+})
+writeProjectJson(nextjsDir, 'tsconfig.json', {
   compilerOptions: { paths: { '@/*': ['./src/*'] } },
 })
 
@@ -95,11 +100,30 @@ for (const file of [
   writeProjectFile(frontendDir, file, 'export const value = 1\n')
 }
 
+for (const file of [
+  'src/app/layout.tsx',
+  'src/app/page.tsx',
+  'src/shared/components/Button.tsx',
+  'src/shared/components/ui/Input.tsx',
+  'src/shared/hooks/UseAuth.ts',
+  'src/shared/contexts/AuthContext.tsx',
+  'src/shared/services/AuthService.ts',
+  'src/shared/utils/Format.ts',
+  'src/shared/helpers/Format.ts',
+  'src/shared/constants/Values.ts',
+  'src/shared/env/index.ts',
+]) {
+  writeProjectFile(nextjsDir, file, 'export const value = 1\n')
+}
+
 const [backendConfig] = aiRules.configs.projects([
   { rootFolder: backendRoot, preset: 'backend' },
 ])
 const [frontendConfig] = aiRules.configs.projects([
   { rootFolder: frontendRoot, preset: 'frontend' },
+])
+const [nextjsConfig] = aiRules.configs.projects([
+  { rootFolder: nextjsRoot, preset: 'nextjs' },
 ])
 
 function lint(config, projectDir, relativeFile, code) {
@@ -125,6 +149,10 @@ function backendLint(relativeFile, code) {
 
 function frontendLint(relativeFile, code) {
   return lint(frontendConfig, frontendDir, relativeFile, code)
+}
+
+function nextjsLint(relativeFile, code) {
+  return lint(nextjsConfig, nextjsDir, relativeFile, code)
 }
 
 test('backend preset allows controller infrastructure and use-case imports', () => {
@@ -334,6 +362,51 @@ test('frontend preset blocks same-layer services and allows same-layer component
   )
   assert.equal(
     frontendLint(
+      'src/shared/components/Button.tsx',
+      "import '@/shared/components/ui/Input'\n",
+    ).length,
+    0,
+  )
+})
+
+test('frontend preset blocks shared components from importing internal folders', () => {
+  for (const source of [
+    "import '@/shared/services/AuthService'\n",
+    "import '@/shared/hooks/UseAuth'\n",
+    "import '@/shared/contexts/AuthContext'\n",
+    "import '@/shared/utils/Format'\n",
+    "import '@/shared/helpers/Format'\n",
+    "import '@/shared/constants/Values'\n",
+    "import '@/shared/env'\n",
+  ]) {
+    assert.equal(
+      frontendLint('src/shared/components/Button.tsx', source).length,
+      1,
+      source,
+    )
+  }
+})
+
+test('frontend preset allows external libraries in shared components', () => {
+  assert.equal(
+    frontendLint(
+      'src/shared/components/Button.tsx',
+      "import 'react'\n",
+    ).length,
+    0,
+  )
+})
+
+test('nextjs preset blocks shared components from importing internal folders', () => {
+  assert.equal(
+    nextjsLint(
+      'src/shared/components/Button.tsx',
+      "import '@/shared/services/AuthService'\n",
+    ).length,
+    1,
+  )
+  assert.equal(
+    nextjsLint(
       'src/shared/components/Button.tsx',
       "import '@/shared/components/ui/Input'\n",
     ).length,

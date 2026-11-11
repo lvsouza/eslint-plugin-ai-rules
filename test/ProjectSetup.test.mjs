@@ -89,13 +89,24 @@ test('does not warn for the other preset', () => {
   )
 })
 
-test('does not warn for frontend and backend presets', () => {
+test('does not warn for frontend, nextjs and backend presets', () => {
   assertNoWarning(
     runSetupRule({
       'ai-rules': {
         project: {
           rootFolder: '.',
           preset: 'frontend',
+          structure: {},
+        },
+      },
+    }),
+  )
+  assertNoWarning(
+    runSetupRule({
+      'ai-rules': {
+        project: {
+          rootFolder: '.',
+          preset: 'nextjs',
           structure: {},
         },
       },

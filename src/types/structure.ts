@@ -1,7 +1,7 @@
 import type { Linter } from 'eslint'
 
 
-export type TProjectPreset = 'frontend' | 'backend' | 'other'
+export type TProjectPreset = 'frontend' | 'nextjs' | 'backend' | 'other'
 
 export type TNameCase = 'PascalCase' | 'camelCase' | 'kebab-case' | 'snake_case'
 

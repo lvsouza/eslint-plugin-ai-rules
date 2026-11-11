@@ -1,11 +1,13 @@
 import type { IProjectPreset, TProjectPreset } from '@/types/structure'
 import { frontendPreset } from './frontend'
 import { backendPreset } from './backend'
+import { nextjsPreset } from './nextjs'
 import { otherPreset } from './other'
 
 
 export const presets: Record<TProjectPreset, IProjectPreset> = {
   frontend: frontendPreset,
+  nextjs: nextjsPreset,
   backend: backendPreset,
   other: otherPreset,
 }

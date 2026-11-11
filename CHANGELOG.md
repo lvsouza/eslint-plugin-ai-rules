@@ -1,13 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 - 2026-11-11
 
 ### Added
 
+- `nextjs` preset for the Next.js App Router under `src/app`, including route files, route groups, dynamic segments, parallel and intercepting routes, plus `middleware.ts` and `instrumentation.ts`.
+- Automatic creation and push of the release tag `v<version>` from the publish workflow after a successful npm publish.
 - `THIRD_PARTY_NOTICES.md` listing the direct third-party dependencies, their licenses and repositories. The file is included in the published package.
 
 ### Changed
 
+- `src/shared/components` in the `frontend` and `nextjs` presets can now import only other components and external libraries. Imports from `services`, `hooks`, `contexts`, `utils`, `helpers`, `constants` and `env` are blocked. This is a breaking change for existing frontend configurations that relied on those imports.
 - All rules from `import-x`, `@stylistic`, `@typescript-eslint` and `boundaries` are now re-exported under the `ai-rules` namespace. `recommended` and `projects()` register only `ai-rules`. This is a breaking change: upstream rule IDs are no longer registered by the generated configs, so overrides must use `ai-rules/*`. Upstream settings keys such as `import-x/*` and `boundaries/*` remain unchanged.
 - `ai-rules/no-default-export` and `ai-rules/no-relative-parent-imports` are enabled as `error` in `recommended` and inherited by `projects()`. This is a breaking change for projects that use default exports or import through `../`; use aliases or packages, or opt out per file or rule.
 

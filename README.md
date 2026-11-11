@@ -5,7 +5,7 @@
 [![node >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
 [![eslint 9.22+ / 10](https://img.shields.io/badge/eslint-%5E9.22%20%7C%7C%20%5E10-4B32C3)](https://eslint.org)
 
-Flat-config-only ESLint plugin for AI-generated code. It catches filename/import drift and enforces a project structure you declare, with ready-to-use `frontend` and `backend` presets.
+Flat-config-only ESLint plugin for AI-generated code. It catches filename/import drift and enforces a project structure you declare, with ready-to-use `frontend`, `nextjs` and `backend` presets.
 
 > **ESLint 9.22+ or 10 only.** Uses flat config (`eslint.config.{js,mjs,ts}`). No legacy `.eslintrc` support.
 
@@ -14,9 +14,10 @@ Flat-config-only ESLint plugin for AI-generated code. It catches filename/import
 | If your project is... | Use |
 |-----------------------|-----|
 | Frontend only | `preset: 'frontend'` |
+| Next.js App Router only | `preset: 'nextjs'` |
 | Backend only | `preset: 'backend'` |
 | Frontend + backend in one repo | two projects with different `rootFolder` |
-| Neither frontend nor backend | `preset: 'other'` |
+| Neither frontend, nextjs nor backend | `preset: 'other'` |
 | Layered architecture | `relations` (controller → useCase → repository) |
 
 Before installing, check:
@@ -63,7 +64,7 @@ export default defineConfig([
 ])
 ```
 
-Project that is neither frontend nor backend:
+Project that is neither frontend, nextjs nor backend:
 
 ```ts
 export default defineConfig([
@@ -114,7 +115,7 @@ npx eslint --fix .
 If you install the plugin and use `aiRules.configs.recommended` without configuring the project structure, `ai-rules/project-setup` reports a warning the first time it lints a file:
 
 ```text
-Project structure validation is not configured. Configure it with aiRules.configs.projects([{ rootFolder: ".", preset: "frontend" | "backend" }]). If this project is not a frontend/backend, use preset: "other" to disable this warning.  ai-rules/project-setup
+Project structure validation is not configured. Configure it with aiRules.configs.projects([{ rootFolder: ".", preset: "frontend" | "nextjs" | "backend" }]). If this project is not a frontend/nextjs/backend, use preset: "other" to disable this warning.  ai-rules/project-setup
 ```
 
 The warning exists only to make sure the new structure rules are actually configured. It is reported once per process.
@@ -122,6 +123,7 @@ The warning exists only to make sure the new structure rules are actually config
 It disappears when you provide a valid configuration:
 
 - `preset: 'frontend'`
+- `preset: 'nextjs'`
 - `preset: 'backend'`
 - `preset: 'other'`
 - a custom non-empty `structure`
@@ -150,7 +152,7 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 ## Features
 
 - **Project structure validation** — folder hierarchy, dynamic folders, folder/file casing, prefixes, suffixes and regex patterns.
-- **Frontend/backend presets** — ready-to-use structures and architecture relations based on real projects.
+- **Frontend/Next.js/backend presets** — ready-to-use structures and architecture relations based on real projects.
 - **Custom structure** — declare exactly how your project must be organized.
 - **Architecture relations** — enforce which layers can import which other layers, including global vs page-local scope.
 - **Monorepo friendly** — one `rootFolder` per project, including nested roots.
@@ -180,7 +182,7 @@ Each project definition has this shape:
 ```ts
 interface IProjectDefinition {
   rootFolder: string
-  preset?: 'frontend' | 'backend' | 'other'
+  preset?: 'frontend' | 'nextjs' | 'backend' | 'other'
   structure?: IProjectStructure
   relations?: IRelationsConfig
   rules?: Linter.RulesRecord
@@ -222,6 +224,21 @@ export default defineConfig([
   ...tseslint.configs.recommended,
   ...aiRules.configs.projects([
     { rootFolder: '.', preset: 'frontend' },
+  ]),
+])
+```
+
+### Next.js App Router only
+
+```ts
+import { defineConfig } from 'eslint/config'
+import aiRules from 'eslint-plugin-ai-rules'
+import tseslint from 'typescript-eslint'
+
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  ...aiRules.configs.projects([
+    { rootFolder: '.', preset: 'nextjs' },
   ]),
 ])
 ```
@@ -567,7 +584,7 @@ aiRules.configs.projects([
 
 The preset backend is strict: controllers only use use-cases plus infrastructure, use-cases cannot access database/helpers directly, repositories cannot import repositories, and services cannot import services. Structural exceptions exist for `generated` and `database/schema`. Service subfolders are generic modules with their own scope.
 
-The preset frontend uses global layers plus page-local scope. Global layers cannot import page-local files. Page-local files can import global layers and files from the same page only.
+The preset frontend uses global layers plus page-local scope. Global layers cannot import page-local files. Page-local files can import global layers and files from the same page only. The nextjs preset reuses the frontend relations and adds the `src/app` structure.
 
 ### Backend preset relations
 
@@ -602,7 +619,7 @@ All global frontend layers live under `src/shared` (for example `src/shared/comp
 
 | Layer | Can import | Same layer |
 |-------|------------|------------|
-| components | components, hooks, contexts, services, generated, utils, helpers, constants, env | yes |
+| components | components only (external libraries are allowed) | yes |
 | hooks | hooks, contexts, services, generated, utils, helpers, constants, env | yes |
 | contexts | services, generated, utils, helpers, constants, env | no |
 | services | generated, utils, helpers, constants, env | no |
@@ -619,6 +636,8 @@ All global frontend layers live under `src/shared` (for example `src/shared/comp
 | pageHelper | helpers, utils, constants, env | no |
 
 Local layers can import global layers. Global layers cannot import page-local layers. `pageHook` cannot import `pageComponent`.
+
+`src/shared/components` is the atomic component layer: it can import other components, but not any internal folder such as `services`, `hooks`, `contexts`, `utils`, `helpers`, `constants` or `env`. External libraries remain allowed for third-party integrated components.
 
 `utils` and `helpers` can import each other. If this creates undesirable cycles, remove one direction.
 
@@ -713,8 +732,8 @@ Configuration warning:
 
 ```text
 [eslint-plugin-ai-rules] Project structure validation is not configured.
-Configure it with aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' | 'backend' }]).
-If this project is not a frontend/backend, use preset: 'other' to disable this warning.
+Configure it with aiRules.configs.projects([{ rootFolder: '.', preset: 'frontend' | 'nextjs' | 'backend' }]).
+If this project is not a frontend/nextjs/backend, use preset: 'other' to disable this warning.
 ```
 
 Structure violation:
@@ -795,6 +814,34 @@ Custom relation message:
 └── .github/**, .vscode/** (ignored)
 ```
 
+### Next.js
+
+The `nextjs` preset is the frontend preset plus the Next.js App Router under `src/app`. The root `app/` layout is not accepted.
+
+```text
+<root>/
+├── same root files and folders as the frontend preset
+├── src/
+│   ├── middleware.ts, instrumentation.ts
+│   ├── app/
+│   │   ├── layout.tsx, page.tsx, loading.tsx, error.tsx, global-error.tsx,
+│   │   │   not-found.tsx, template.tsx, default.tsx, forbidden.tsx,
+│   │   │   unauthorized.tsx, route.ts
+│   │   ├── sitemap.ts, robots.ts, manifest.ts, providers.tsx, globals.css
+│   │   ├── opengraph-image.{tsx,jpg,jpeg,png,gif}
+│   │   ├── twitter-image.{tsx,jpg,jpeg,png,gif}
+│   │   ├── icon.{tsx,ico,jpg,jpeg,png,svg}
+│   │   ├── apple-icon.{tsx,jpg,jpeg,png}
+│   │   ├── favicon.ico
+│   │   └── <route-segment>/**
+│   │       ├── same App Router files as src/app
+│   │       └── <nested-route-segment>/**
+│   └── shared/, pages/ (same as the frontend preset)
+├── e2e/, scripts/, public/, .github/, .vscode/ (same as the frontend preset)
+```
+
+`<route-segment>` accepts normal routes, route groups such as `(marketing)`, dynamic segments such as `[slug]` and `[...slug]`, parallel routes such as `@modal`, and intercepting routes. Route folders are validated recursively; deeper levels beyond the configured depth are ignored instead of reported.
+
 ### Backend
 
 ```text
@@ -844,7 +891,7 @@ Custom relation message:
 ## Structure DSL
 
 ```ts
-type TProjectPreset = 'frontend' | 'backend' | 'other'
+type TProjectPreset = 'frontend' | 'nextjs' | 'backend' | 'other'
 
 type TNameCase = 'PascalCase' | 'camelCase' | 'kebab-case' | 'snake_case'
 
@@ -986,7 +1033,7 @@ Reports the configuration warning described above as a regular ESLint diagnostic
 - Enabled as `warn` in `recommended`
 - Reports once per process
 - Respects the configured severity (`off`, `warn`, `error`)
-- Suppressed by `preset: 'other'`, `frontend`, `backend` or a non-empty custom structure
+- Suppressed by `preset: 'other'`, `frontend`, `nextjs`, `backend` or a non-empty custom structure
 
 ### `ai-rules/filename-pascal-case`
 
@@ -1158,7 +1205,7 @@ rules: {
 |---------|-----------------|
 | `aiRules.configs.recommended` | bundled rules + configuration warning |
 | `aiRules.configs.projects([...])` | recommended rules + `project-structure` |
-| `projects([...])` with `preset: 'frontend' \| 'backend'` | preset structure + preset relations |
+| `projects([...])` with `preset: 'frontend' \| 'nextjs' \| 'backend'` | preset structure + preset relations |
 | `projects([...])` with `structure` | structure validation |
 | `projects([...])` with `relations` | `ai-rules/dependencies` |
 | `projects([...])` with both | structure + relations |
@@ -1349,7 +1396,7 @@ If you use settings directly, keep the upstream keys (`import-x/*` and `boundari
 ## Migrating from 0.2.x
 
 1. Replace `aiRules.configs.recommended` with `aiRules.configs.projects([...])`.
-2. Choose a preset: `frontend`, `backend`, or `other`.
+2. Choose a preset: `frontend`, `nextjs`, `backend`, or `other`.
 3. Set `rootFolder` to the folder containing `package.json`.
 4. Add `relations` if you want layer boundaries.
 5. Keep pairing with `typescript-eslint`.
@@ -1394,7 +1441,7 @@ ESLINT_VERSION=9.22.0 yarn test:consumer
 ESLINT_VERSION='^10.0.0' yarn test:consumer
 ```
 
-The full validation runs in `.github/workflows/release.yml` on version tags: `verify` on Node 20, 22 and 24, coverage and package checks on Node 24, and consumer tests on Node 20/24 with ESLint 9.22 and 10. Pull requests keep dependency review and CodeQL.
+The publish workflow (`.github/workflows/publish.yml`) runs on every push to `main`. When `package.json` has a version different from the latest npm release, it runs lint, typecheck, tests and build before publishing. After a successful publish, it creates and pushes the matching `v<version>` tag.
 
 ### Project structure
 
@@ -1432,9 +1479,8 @@ eslint-ai-guard/
 ├── docs/
 ├── .github/
 │   ├── workflows/
-│   │   ├── codeql.yml
-│   │   ├── dependency-review.yml
-│   │   └── release.yml
+│   │   ├── ci.yml
+│   │   └── publish.yml
 │   ├── ISSUE_TEMPLATE/
 │   └── dependabot.yml
 ├── CHANGELOG.md
@@ -1462,27 +1508,18 @@ eslint-ai-guard/
 
 ## Publishing
 
-Releases are driven by a version tag. The workflow validates that the tag matches `package.json`, runs all checks, publishes to npm with provenance and creates a GitHub release.
+Releases are manual in the sense that you choose the version, but publication and tagging are automated by `.github/workflows/publish.yml`.
 
 1. Update `version` in `package.json`.
 2. Update `CHANGELOG.md`.
 3. Run `yarn test:release`.
-4. Commit and push the changes.
-5. Create and push a tag:
+4. Commit and push the changes to `main`.
 
-```bash
-git tag v0.4.0
-git push origin v0.4.0
-```
+On push to `main`, the workflow compares the `package.json` version with the latest npm release. If the version changed, it runs lint, typecheck, tests and build, publishes to npm, then creates and pushes the matching `v<version>` tag automatically.
 
-The release workflow requires the `NPM_TOKEN` repository secret. Provenance also requires `id-token: write`, which is already configured in `.github/workflows/release.yml`.
+The workflow requires the `NPM_TOKEN` repository secret for npm. The tag job uses the default `GITHUB_TOKEN` with `contents: write`.
 
-The workflow runs all checks before publishing. If any check fails, the publish job is skipped. Fix the problem, delete the tag and recreate it before pushing again:
-
-```bash
-git tag -d v0.4.0
-git push origin :refs/tags/v0.4.0
-```
+If the version was already published but the tag is missing, pushing to `main` again will create the missing tag without republishing. The tag job is idempotent and skips when the tag already exists.
 
 `prepack` runs `yarn build` automatically, so published packages always contain a fresh `dist`. The plugin version is injected from `package.json` during the build, so you do not need to edit `src/plugin.ts`.
 
