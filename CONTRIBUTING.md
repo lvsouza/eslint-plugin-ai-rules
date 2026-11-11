@@ -65,6 +65,6 @@ Releases are triggered by pushing a new version to `main`:
 1. Update `package.json` and `CHANGELOG.md`.
 2. Run `yarn test:release`.
 3. Commit and push the changes to `main`.
-4. `.github/workflows/publish.yml` detects the version change, runs lint, typecheck, tests and build, publishes to npm and creates/pushes the matching `v<version>` tag automatically.
+4. `.github/workflows/publish.yml` detects the version change, runs lint, typecheck, tests and build, publishes to npm, creates/pushes the matching `v<version>` tag and creates the GitHub Release with generated notes automatically.
 
-If the version is already on npm but the tag is missing, pushing to `main` again creates the missing tag without republishing. Never publish locally without the release workflow unless explicitly necessary.
+If the version is already on npm but the tag or release is missing, pushing to `main` again creates the missing item without republishing. Never publish locally without the release workflow unless explicitly necessary.

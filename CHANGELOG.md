@@ -5,7 +5,7 @@
 ### Added
 
 - `nextjs` preset for the Next.js App Router under `src/app`, including route files, route groups, dynamic segments, parallel and intercepting routes, plus `middleware.ts` and `instrumentation.ts`.
-- Automatic creation and push of the release tag `v<version>` from the publish workflow after a successful npm publish.
+- Automatic creation and push of the release tag `v<version>` and the corresponding GitHub Release with generated notes from the publish workflow after a successful npm publish.
 - `THIRD_PARTY_NOTICES.md` listing the direct third-party dependencies, their licenses and repositories. The file is included in the published package.
 
 ### Changed

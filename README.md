@@ -1441,7 +1441,7 @@ ESLINT_VERSION=9.22.0 yarn test:consumer
 ESLINT_VERSION='^10.0.0' yarn test:consumer
 ```
 
-The publish workflow (`.github/workflows/publish.yml`) runs on every push to `main`. When `package.json` has a version different from the latest npm release, it runs lint, typecheck, tests and build before publishing. After a successful publish, it creates and pushes the matching `v<version>` tag.
+The publish workflow (`.github/workflows/publish.yml`) runs on every push to `main`. When `package.json` has a version different from the latest npm release, it runs lint, typecheck, tests and build before publishing. After a successful publish, it creates and pushes the matching `v<version>` tag and creates the corresponding GitHub Release with generated notes.
 
 ### Project structure
 
@@ -1508,18 +1508,18 @@ eslint-ai-guard/
 
 ## Publishing
 
-Releases are manual in the sense that you choose the version, but publication and tagging are automated by `.github/workflows/publish.yml`.
+Releases are manual in the sense that you choose the version, but publication, tagging and GitHub Releases are automated by `.github/workflows/publish.yml`.
 
 1. Update `version` in `package.json`.
 2. Update `CHANGELOG.md`.
 3. Run `yarn test:release`.
 4. Commit and push the changes to `main`.
 
-On push to `main`, the workflow compares the `package.json` version with the latest npm release. If the version changed, it runs lint, typecheck, tests and build, publishes to npm, then creates and pushes the matching `v<version>` tag automatically.
+On push to `main`, the workflow compares the `package.json` version with the latest npm release. If the version changed, it runs lint, typecheck, tests and build, publishes to npm, then creates and pushes the matching `v<version>` tag and creates the GitHub Release with generated notes automatically.
 
-The workflow requires the `NPM_TOKEN` repository secret for npm. The tag job uses the default `GITHUB_TOKEN` with `contents: write`.
+The workflow requires the `NPM_TOKEN` repository secret for npm. The tag and release jobs use the default `GITHUB_TOKEN` with `contents: write`.
 
-If the version was already published but the tag is missing, pushing to `main` again will create the missing tag without republishing. The tag job is idempotent and skips when the tag already exists.
+If the version was already published but the tag or release is missing, pushing to `main` again will create the missing item without republishing. Both jobs are idempotent and skip when the tag or release already exists.
 
 `prepack` runs `yarn build` automatically, so published packages always contain a fresh `dist`. The plugin version is injected from `package.json` during the build, so you do not need to edit `src/plugin.ts`.
 
