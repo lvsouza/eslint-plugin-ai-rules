@@ -154,6 +154,25 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Generate release notes
+        env:
+          TAG: v${{ needs.check.outputs.version }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node scripts/GenerateReleaseNotes.mjs \
+            --tag "$TAG" \
+            --output release-notes.md
+
       - name: Create GitHub release
         env:
           TAG: v${{ needs.check.outputs.version }}
@@ -166,5 +185,5 @@ jobs:
 
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --generate-notes \
+            --notes-file release-notes.md \
             --verify-tag

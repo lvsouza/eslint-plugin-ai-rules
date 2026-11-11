@@ -19,6 +19,7 @@
 
 ### Changed
 
+- GitHub Releases now use notes generated from commit subjects grouped by conventional commit type, with commit links and a Full Changelog comparison, instead of GitHub auto-generated notes.
 - The merged `preset + structure` is validated after merging, and unsupported structure properties are rejected instead of being silently ignored.
 - Unsupported properties in `relations`, preset overrides and project overrides are rejected.
 - Override file patterns are normalized and restricted to the project `rootFolder`; negated patterns are supported.
