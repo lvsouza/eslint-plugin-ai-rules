@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-ai-rules",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Flat-config ESLint plugin that enforces filenames, imports and project structure for AI-generated code.",
   "type": "module",
   "main": "./dist/index.cjs",
