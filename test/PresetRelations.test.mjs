@@ -78,6 +78,7 @@ for (const file of [
 for (const file of [
   'src/shared/components/Button.tsx',
   'src/shared/components/ui/Input.tsx',
+  'src/shared/components/forms/inputs/TextInput.tsx',
   'src/shared/hooks/UseAuth.ts',
   'src/shared/contexts/AuthContext.tsx',
   'src/shared/services/AuthService.ts',
@@ -91,11 +92,13 @@ for (const file of [
   'src/pages/orders/helpers.ts',
   'src/pages/users/helpers.ts',
   'src/pages/orders/components/OrderCard.tsx',
+  'src/pages/orders/components/cards/OrderCard.tsx',
   'src/pages/orders/hooks/UseOrders.ts',
   'src/pages/orders/services/Orders.ts',
   'src/pages/orders/contexts/OrdersContext.tsx',
   'src/pages/orders/helpers/Format.ts',
   'src/pages/users/components/UserCard.tsx',
+  'src/pages/users/components/cards/UserCard.tsx',
 ]) {
   writeProjectFile(frontendDir, file, 'export const value = 1\n')
 }
@@ -106,6 +109,7 @@ for (const file of [
   'src/app/orders/page.tsx',
   'src/shared/components/Button.tsx',
   'src/shared/components/ui/Input.tsx',
+  'src/shared/components/forms/inputs/TextInput.tsx',
   'src/shared/hooks/UseAuth.ts',
   'src/shared/contexts/AuthContext.tsx',
   'src/shared/services/AuthService.ts',
@@ -116,11 +120,13 @@ for (const file of [
   'src/shared/pages/orders/Orders.tsx',
   'src/shared/pages/orders/helpers.ts',
   'src/shared/pages/orders/components/OrderCard.tsx',
+  'src/shared/pages/orders/components/cards/OrderCard.tsx',
   'src/shared/pages/orders/hooks/UseOrders.ts',
   'src/shared/pages/orders/services/Orders.ts',
   'src/shared/pages/orders/contexts/OrdersContext.tsx',
   'src/shared/pages/orders/helpers/Format.ts',
   'src/shared/pages/users/components/UserCard.tsx',
+  'src/shared/pages/users/components/cards/UserCard.tsx',
   'src/shared/pages/users/helpers/Format.ts',
 ]) {
   writeProjectFile(nextjsDir, file, 'export const value = 1\n')
@@ -379,6 +385,40 @@ test('frontend preset blocks same-layer services and allows same-layer component
   )
 })
 
+test('frontend preset treats nested component groups as same-layer components', () => {
+  assert.equal(
+    frontendLint(
+      'src/shared/components/forms/inputs/TextInput.tsx',
+      "import '@/shared/components/Button'\nimport '@/shared/components/ui/Input'\n",
+    ).length,
+    0,
+  )
+  assert.equal(
+    frontendLint(
+      'src/shared/components/forms/inputs/TextInput.tsx',
+      "import '@/shared/services/AuthService'\n",
+    ).length,
+    1,
+  )
+})
+
+test('frontend preset keeps nested page component groups page-scoped', () => {
+  assert.equal(
+    frontendLint(
+      'src/pages/orders/components/cards/OrderCard.tsx',
+      "import '@/shared/components/Button'\nimport '@/pages/orders/helpers'\n",
+    ).length,
+    0,
+  )
+  assert.equal(
+    frontendLint(
+      'src/pages/orders/components/cards/OrderCard.tsx',
+      "import '@/pages/users/components/cards/UserCard'\n",
+    ).length,
+    1,
+  )
+})
+
 test('frontend preset blocks shared components from importing internal folders', () => {
   for (const source of [
     "import '@/shared/services/AuthService'\n",
@@ -421,6 +461,37 @@ test('nextjs preset blocks shared components from importing internal folders', (
       "import '@/shared/components/ui/Input'\n",
     ).length,
     0,
+  )
+})
+
+test('nextjs preset treats nested component groups as scoped components', () => {
+  assert.equal(
+    nextjsLint(
+      'src/shared/components/forms/inputs/TextInput.tsx',
+      "import '@/shared/components/Button'\nimport '@/shared/components/ui/Input'\n",
+    ).length,
+    0,
+  )
+  assert.equal(
+    nextjsLint(
+      'src/shared/components/forms/inputs/TextInput.tsx',
+      "import '@/shared/services/AuthService'\n",
+    ).length,
+    1,
+  )
+  assert.equal(
+    nextjsLint(
+      'src/shared/pages/orders/components/cards/OrderCard.tsx',
+      "import '@/shared/components/Button'\nimport '@/shared/pages/orders/helpers/Format'\n",
+    ).length,
+    0,
+  )
+  assert.equal(
+    nextjsLint(
+      'src/shared/pages/orders/components/cards/OrderCard.tsx',
+      "import '@/shared/pages/users/components/cards/UserCard'\n",
+    ).length,
+    1,
   )
 })
 

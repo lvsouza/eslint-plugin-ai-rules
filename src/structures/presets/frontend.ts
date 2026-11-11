@@ -1,4 +1,4 @@
-import { commonIgnoredPaths, configFileDefaultExportOverride, pascalTs, pascalTsOrTsx, pascalTsx } from './helpers'
+import { commonIgnoredPaths, componentGroupNode, configFileDefaultExportOverride, pascalTs, pascalTsOrTsx, pascalTsx } from './helpers'
 import type { IProjectPreset, IRelationsConfig } from '@/types/structure'
 
 
@@ -245,6 +245,7 @@ export const frontendPreset: IProjectPreset = {
                   ui: {
                     files: [pascalTsOrTsx],
                   },
+                  '[component-group]': componentGroupNode(),
                 },
               },
               constants: {
@@ -289,6 +290,9 @@ export const frontendPreset: IProjectPreset = {
                 folders: {
                   components: {
                     files: [pascalTsx],
+                    folders: {
+                      '[component-group]': componentGroupNode(),
+                    },
                   },
                   hooks: {
                     files: [pascalTs],
@@ -324,12 +328,18 @@ export const frontendPreset: IProjectPreset = {
                             folders: {
                               components: {
                                 files: [pascalTsx],
+                                folders: {
+                                  '[component-group]': componentGroupNode(),
+                                },
                               },
                               contents: {
                                 files: [pascalTsx],
                                 folders: {
                                   components: {
                                     files: [pascalTsx],
+                                    folders: {
+                                      '[component-group]': componentGroupNode(),
+                                    },
                                   },
                                 },
                               },

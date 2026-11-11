@@ -651,6 +651,8 @@ Local layers can import global layers. Global layers cannot import page-local la
 
 `src/shared/components` is the atomic component layer: it can import other components, but not any internal folder such as `services`, `hooks`, `contexts`, `utils`, `helpers`, `constants` or `env`. External libraries remain allowed for third-party integrated components.
 
+Component folders accept kebab-case grouping subfolders at multiple levels (up to 10 nested groups), both in `src/shared/components` and in page-local `components` folders (including `src/shared/pages/<page-kebab>/components` in the nextjs preset). Relations still classify grouped files as `components` or `pageComponent`. `src/shared/components/ui` remains flat.
+
 `utils` and `helpers` can import each other. If this creates undesirable cycles, remove one direction.
 
 ### Same-layer and page scope
@@ -792,6 +794,9 @@ Custom relation message:
 │   │   │       └── *.png, *.jpg, *.svg, *.webp, *.woff2, *.mp4, ...
 │   │   ├── components/
 │   │   │   ├── *.tsx
+│   │   │   ├── <component-group-kebab>/
+│   │   │   │   ├── *.tsx
+│   │   │   │   └── <nested-component-group-kebab>/**
 │   │   │   └── ui/*.{ts,tsx}
 │   │   ├── constants/*.ts
 │   │   ├── contexts/*.tsx
@@ -806,7 +811,9 @@ Custom relation message:
 │       ├── *.tsx
 │       └── <feature-kebab>/
 │           ├── *.tsx, helpers.ts, schema.ts, types.ts
-│           ├── components/*.tsx
+│           ├── components/
+│           │   ├── *.tsx
+│           │   └── <component-group-kebab>/**
 │           ├── hooks/*.ts
 │           ├── services/*.ts
 │           ├── contexts/*.tsx
@@ -815,10 +822,14 @@ Custom relation message:
 │               ├── *.tsx
 │               └── <section-kebab>/
 │                   ├── *.tsx, *.ts
-│                   ├── components/*.tsx
+│                   ├── components/
+│                   │   ├── *.tsx
+│                   │   └── <component-group-kebab>/**
 │                   └── contents/
 │                       ├── *.tsx
-│                       └── components/*.tsx
+│                       └── components/
+│                           ├── *.tsx
+│                           └── <component-group-kebab>/**
 ├── e2e/
 │   ├── .auth/** (ignored)
 │   ├── fixtures/*
@@ -860,7 +871,9 @@ The `nextjs` preset is the frontend preset plus the Next.js App Router under `sr
 │   └── shared/pages/
 │       └── <page-kebab>/
 │           ├── *.tsx, helpers.ts, schema.ts, types.ts
-│           ├── components/*.tsx
+│           ├── components/
+│           │   ├── *.tsx
+│           │   └── <component-group-kebab>/**
 │           ├── hooks/*.ts
 │           ├── services/*.ts
 │           ├── contexts/*.tsx

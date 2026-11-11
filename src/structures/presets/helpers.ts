@@ -1,6 +1,8 @@
-import type { IProjectRulesOverride, TFileRule } from '@/types/structure'
+import type { IProjectRulesOverride, IStructureNode, TFileRule } from '@/types/structure'
 import { BUNDLED_RULE_IDS } from '@/rules/constants'
 
+
+const COMPONENT_GROUP_LEVELS = 10
 
 export const pascalTs: TFileRule = {
   case: 'PascalCase',
@@ -15,6 +17,23 @@ export const pascalTsx: TFileRule = {
 export const pascalTsOrTsx: TFileRule = {
   case: 'PascalCase',
   extensions: ['.ts', '.tsx'],
+}
+
+export function componentGroupNode(
+  levels: number = COMPONENT_GROUP_LEVELS,
+): IStructureNode {
+  const node: IStructureNode = {
+    name: { case: 'kebab-case' },
+    files: [pascalTsx],
+  }
+
+  if (levels > 1) {
+    node.folders = {
+      '[component-group]': componentGroupNode(levels - 1),
+    }
+  }
+
+  return node
 }
 
 export const configFileDefaultExportOverride: IProjectRulesOverride = {

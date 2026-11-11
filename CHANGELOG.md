@@ -4,6 +4,7 @@
 
 ### Added
 
+- `frontend` and `nextjs` presets now accept kebab-case component grouping subfolders at multiple levels (up to 10 nested groups) under `src/shared/components`, page-local `components` folders and Next.js `src/shared/pages/<page>/components`. `src/shared/components/ui` remains flat.
 - `nextjs` preset now allows page-exclusive resources under `src/shared/pages/<page-kebab>/` (`components`, `hooks`, `services`, `contexts`, `helpers` and page files). The page-local relation layers are extended to these folders, keeping imports scoped to the same page.
 - File-scoped `overrides` for project definitions and presets. `projects()` now returns one config per override in addition to the base project config.
 - `nextjs` preset ships overrides that disable `ai-rules/no-default-export` for Next.js framework files, and all presets disable it for `*.config.{js,mjs,cjs,ts}`.

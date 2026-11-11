@@ -1,5 +1,5 @@
 import type { IProjectPreset, IProjectRulesOverride, IRelationsConfig, IStructureNode, TFileRule } from '@/types/structure'
-import { configFileDefaultExportOverride, pascalTs, pascalTsx } from './helpers'
+import { componentGroupNode, configFileDefaultExportOverride, pascalTs, pascalTsx } from './helpers'
 import { BUNDLED_RULE_IDS, RULE_IDS } from '@/rules/constants'
 import { frontendPreset, frontendRelations } from './frontend'
 import { mergeStructure } from '@/structures/mergeStructure'
@@ -68,6 +68,9 @@ const sharedPageNode: IStructureNode = {
   folders: {
     components: {
       files: [pascalTsx],
+      folders: {
+        '[component-group]': componentGroupNode(),
+      },
     },
     hooks: {
       files: [pascalTs],

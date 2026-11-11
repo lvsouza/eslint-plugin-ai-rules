@@ -123,6 +123,29 @@ ruleTester.run('project-structure', rule, {
     },
     {
       code: '',
+      filename: 'src/shared/components/forms/inputs/TextInput.tsx',
+      settings: frontendSettings,
+    },
+    {
+      code: '',
+      filename:
+        'src/pages/orders/components/cards/summary/OrderSummary.tsx',
+      settings: frontendSettings,
+    },
+    {
+      code: '',
+      filename:
+        'src/pages/customize/tabs/pages/layout-organizer/components/grid/cells/LayoutCell.tsx',
+      settings: frontendSettings,
+    },
+    {
+      code: '',
+      filename:
+        'src/pages/customize/tabs/pages/layout-organizer/contents/components/preview/cards/PreviewCard.tsx',
+      settings: frontendSettings,
+    },
+    {
+      code: '',
       filename: 'src/pages/customize/tabs/pages/layout-organizer/collisionDetection.ts',
       settings: frontendSettings,
     },
@@ -261,6 +284,24 @@ ruleTester.run('project-structure', rule, {
       filename: 'src/pages/orders/utils/Helpers.ts',
       settings: frontendSettings,
       errors: [{ messageId: 'folderNotAllowed' }],
+    },
+    {
+      code: '',
+      filename: 'src/shared/components/Forms/Button.tsx',
+      settings: frontendSettings,
+      errors: [{ messageId: 'folderNameMismatch' }],
+    },
+    {
+      code: '',
+      filename: 'src/shared/components/ui/forms/Button.tsx',
+      settings: frontendSettings,
+      errors: [{ messageId: 'folderNotAllowed' }],
+    },
+    {
+      code: '',
+      filename: 'src/pages/orders/components/Cards/OrderCard.tsx',
+      settings: frontendSettings,
+      errors: [{ messageId: 'folderNameMismatch' }],
     },
     {
       code: '',
