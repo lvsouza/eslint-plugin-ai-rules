@@ -155,10 +155,12 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 - **Frontend/Next.js/backend presets** — ready-to-use structures and architecture relations based on real projects.
 - **Custom structure** — declare exactly how your project must be organized.
 - **Architecture relations** — enforce which layers can import which other layers, including global vs page-local scope.
+- **File-scoped preset overrides** — presets can disable rules only for framework files that require a different convention.
 - **Monorepo friendly** — one `rootFolder` per project, including nested roots.
 - **Autofix** — `sort-imports` and `no-multiline-imports` are fixable.
-- **Named exports only** — `ai-rules/no-default-export` forbids default exports by default.
+- **Named exports only** — `ai-rules/no-default-export` forbids default exports by default, with automatic exceptions for config files and Next.js framework files.
 - **No parent imports** — `ai-rules/no-relative-parent-imports` keeps modules importing through aliases or packages instead of `../`.
+- **Unresolved imports** — `ai-rules/no-unresolved` uses the TypeScript resolver to catch broken aliases and packages.
 - **Bundled rules** — all rules from the bundled plugins are re-exported under the `ai-rules` namespace.
 - **ESM + CJS** — `dist/index.js` and `dist/index.cjs`, with correct type declarations for both.
 
@@ -173,19 +175,25 @@ The warning is still recommended as a setup check, so prefer `preset: 'other'` f
 
 Runtime dependencies are `@stylistic/eslint-plugin`, `eslint-plugin-import-x`, `eslint-plugin-boundaries` and `typescript-eslint`.
 
-`eslint-import-resolver-typescript` is a peer dependency used by `relations` to resolve TS aliases. npm installs peers automatically; with Yarn 1 or pnpm, install it explicitly.
+`eslint-import-resolver-typescript` is a peer dependency used to resolve TS aliases for `relations` and `ai-rules/no-unresolved`. npm installs peers automatically; with Yarn 1 or pnpm, install it explicitly.
 
 ## Project structure
 
 Each project definition has this shape:
 
 ```ts
+interface IProjectRulesOverride {
+  files: string[]
+  rules: Linter.RulesRecord
+}
+
 interface IProjectDefinition {
   rootFolder: string
   preset?: 'frontend' | 'nextjs' | 'backend' | 'other'
   structure?: IProjectStructure
   relations?: IRelationsConfig
   rules?: Linter.RulesRecord
+  overrides?: IProjectRulesOverride[]
 }
 ```
 
@@ -198,18 +206,20 @@ interface IProjectDefinition {
 - `structure` is merged on top of the preset.
 - `relations` enables architecture dependency policies with `eslint-plugin-boundaries`.
 - `rules` overrides rule severities and options for that project using the standard ESLint rule format.
+- `overrides` applies rule changes only to the listed files, with `files` relative to `rootFolder`.
 - `preset: 'other'` disables structure validation unless a custom `structure` is provided.
 
-`aiRules.configs.projects([...])` generates one flat config per project. Each config:
+`aiRules.configs.projects([...])` generates configs for each project. A project normally produces one base config plus one config per file-scoped override:
 
 - scopes `files` to the project root;
 - sets `settings['ai-rules'].project`;
 - enables `ai-rules/project-structure`;
 - adds `ignores` from `ignoredPaths`;
+- configures the TypeScript import resolver when `tsconfig.json` exists;
 - includes the recommended rules, overridable by `rules`;
 - disables `ai-rules/filename-pascal-case`, because file naming is handled by `project-structure`;
 - when `relations` is present, enables `ai-rules/dependencies`;
-- applies `rules` last, so a project can disable or change any rule.
+- applies preset overrides, then project overrides, then project `rules` last, so a project can disable or change any rule.
 
 ## Examples
 
@@ -584,7 +594,7 @@ aiRules.configs.projects([
 
 The preset backend is strict: controllers only use use-cases plus infrastructure, use-cases cannot access database/helpers directly, repositories cannot import repositories, and services cannot import services. Structural exceptions exist for `generated` and `database/schema`. Service subfolders are generic modules with their own scope.
 
-The preset frontend uses global layers plus page-local scope. Global layers cannot import page-local files. Page-local files can import global layers and files from the same page only. The nextjs preset reuses the frontend relations and adds the `src/app` structure.
+The preset frontend uses global layers plus page-local scope. Global layers cannot import page-local files. Page-local files can import global layers and files from the same page only. The nextjs preset reuses the frontend relations, adds the `src/app` structure, maps `src/app` as its own layer and extends the page-local layers to `src/shared/pages/*`. App routes can import any layer, but other layers cannot import app routes.
 
 ### Backend preset relations
 
@@ -615,7 +625,7 @@ These violations are intentional and should be fixed during migration.
 
 ### Frontend preset relations
 
-All global frontend layers live under `src/shared` (for example `src/shared/components`). Page-local layers remain under `src/pages/*`.
+All global frontend layers live under `src/shared` (for example `src/shared/components`). Page-local layers remain under `src/pages/*`. The nextjs preset also maps the same page-local layers under `src/shared/pages/*`.
 
 | Layer | Can import | Same layer |
 |-------|------------|------------|
@@ -772,6 +782,9 @@ Custom relation message:
 ├── src/
 │   ├── App.tsx, AppRoutes.tsx, main.tsx, index.css, vite-env.d.ts
 │   ├── shared/
+│   │   ├── assets/
+│   │   │   ├── index.ts
+│   │   │   └── *.png, *.jpg, *.svg, *.webp, *.woff2, *.mp4, ...
 │   │   ├── components/
 │   │   │   ├── *.tsx
 │   │   │   └── ui/*.{ts,tsx}
@@ -811,6 +824,7 @@ Custom relation message:
 ├── scripts/*.ts
 ├── scripts/types/** (ignored)
 ├── public/** (ignored)
+├── .storybook/**, .turbo/**, .vercel/**, storybook-static/** (ignored)
 └── .github/**, .vscode/** (ignored)
 ```
 
@@ -821,12 +835,13 @@ The `nextjs` preset is the frontend preset plus the Next.js App Router under `sr
 ```text
 <root>/
 ├── same root files and folders as the frontend preset
+├── next-env.d.ts, .next/**, out/** (ignored)
 ├── src/
-│   ├── middleware.ts, instrumentation.ts
+│   ├── middleware.ts, proxy.ts, instrumentation.ts, instrumentation-client.ts
 │   ├── app/
 │   │   ├── layout.tsx, page.tsx, loading.tsx, error.tsx, global-error.tsx,
-│   │   │   not-found.tsx, template.tsx, default.tsx, forbidden.tsx,
-│   │   │   unauthorized.tsx, route.ts
+│   │   │   global-not-found.tsx, not-found.tsx, template.tsx, default.tsx,
+│   │   │   forbidden.tsx, unauthorized.tsx, route.ts
 │   │   ├── sitemap.ts, robots.ts, manifest.ts, providers.tsx, globals.css
 │   │   ├── opengraph-image.{tsx,jpg,jpeg,png,gif}
 │   │   ├── twitter-image.{tsx,jpg,jpeg,png,gif}
@@ -836,11 +851,23 @@ The `nextjs` preset is the frontend preset plus the Next.js App Router under `sr
 │   │   └── <route-segment>/**
 │   │       ├── same App Router files as src/app
 │   │       └── <nested-route-segment>/**
-│   └── shared/, pages/ (same as the frontend preset)
+│   ├── shared/, pages/ (same as the frontend preset)
+│   └── shared/pages/
+│       └── <page-kebab>/
+│           ├── *.tsx, helpers.ts, schema.ts, types.ts
+│           ├── components/*.tsx
+│           ├── hooks/*.ts
+│           ├── services/*.ts
+│           ├── contexts/*.tsx
+│           └── helpers/*.ts
 ├── e2e/, scripts/, public/, .github/, .vscode/ (same as the frontend preset)
 ```
 
 `<route-segment>` accepts normal routes, route groups such as `(marketing)`, dynamic segments such as `[slug]` and `[...slug]`, parallel routes such as `@modal`, and intercepting routes. Route folders are validated recursively; deeper levels beyond the configured depth are ignored instead of reported.
+
+`src/shared/pages/<page-kebab>/` mirrors the frontend page-local resources so Next.js pages can keep page-exclusive components, hooks, services, contexts and helpers out of `src/app`. Files directly under `src/shared/pages/` are not allowed; the page folder must match kebab-case.
+
+The `nextjs` preset automatically disables `ai-rules/no-default-export` for framework files that require default exports (`page.tsx`, `layout.tsx`, error files, metadata files, `middleware.ts` and `proxy.ts`). The `src/app` layer is also added to relations, so shared and page-local code cannot import app routes.
 
 ### Backend
 
@@ -999,6 +1026,31 @@ files: [
 | `ignore` | overrides the preset |
 | `ignoredPaths` | union of preset and custom paths |
 
+The merged structure is validated again after the merge, so a custom structure cannot create an invalid result such as two dynamic folders at the same level. Unsupported DSL properties are rejected instead of being silently ignored.
+
+### Rule overrides
+
+`overrides` applies rules only to the declared files:
+
+```ts
+aiRules.configs.projects([
+  {
+    rootFolder: '.',
+    preset: 'nextjs',
+    overrides: [
+      {
+        files: ['src/app/**/page.tsx'],
+        rules: {
+          'ai-rules/no-default-export': 'off',
+        },
+      },
+    ],
+  },
+])
+```
+
+Precedence for override configs is: preset override rules, then project override rules, then project `rules`. Any flat config placed after `projects()` still wins.
+
 ## Limitations
 
 - Structure validation only runs for files ESLint actually lints.
@@ -1007,7 +1059,8 @@ files: [
 - Nested roots are supported, but duplicate roots are rejected.
 - Relation layers must point to folders, not individual files.
 - Scoped layers must use patterns with a wildcard, such as `src/pages/*`.
-- TypeScript aliases in `relations` require the project `tsconfig.json`.
+- TypeScript aliases in `relations` and `no-unresolved` require the project `tsconfig.json`.
+- `ai-rules/no-unresolved` ignores style, image, font and media imports because those files are not resolved as JavaScript modules.
 - Type-only imports follow the same restrictions by default.
 - The backend preset is strict and will flag existing imports that violate AGENTS.md.
 - The frontend preset allows `utils` and `helpers` to import each other, which can create cycles.
@@ -1089,8 +1142,13 @@ All rules from `import-x`, `@stylistic`, `@typescript-eslint` and `boundaries` a
 | Rule | Default | Purpose |
 |------|---------|---------|
 | `ai-rules/no-duplicates` | `error` | Prevent importing the same module twice |
-| `ai-rules/no-default-export` | `error` | Forbid default exports |
+| `ai-rules/no-default-export` | `error` | Forbid default exports, except config files and Next.js framework files |
 | `ai-rules/no-relative-parent-imports` | `error` | Forbid relative imports from parent directories |
+| `ai-rules/no-explicit-any` | `error` | Forbid explicit `any` |
+| `ai-rules/no-non-null-assertion` | `error` | Forbid non-null assertions |
+| `ai-rules/no-self-import` | `error` | Forbid a module importing itself |
+| `ai-rules/no-unresolved` | `error` | Report imports that cannot be resolved |
+| `no-debugger` | `error` | Forbid `debugger` statements |
 | `max-len` | `off` | No line length limit |
 | `ai-rules/semi` | `['error', 'never']` | No semicolons |
 | `ai-rules/consistent-type-imports` | `['error', { prefer: 'type-imports' }]` | Prefer `import type` |
@@ -1101,13 +1159,15 @@ The alias is the original rule name, unless two plugins expose the same name. In
 - `ai-rules/import-x-no-namespace` and `ai-rules/typescript-eslint-no-namespace`
 - `ai-rules/import-x-no-deprecated` and `ai-rules/typescript-eslint-no-deprecated`
 
+`ai-rules/no-relative-parent-imports` only checks specifiers that start with `.`, so aliases such as `@/` remain valid even when the TypeScript resolver is active.
+
 The original rule options, messages and docs are preserved. Settings still use the upstream names (`import-x/*`, `boundaries/*`, `import/resolver`) because the original rule implementations read those keys.
 
-`ai-rules/no-default-export` reports both `export default` and `export { value as default }`. Framework files that require default exports, such as `eslint.config.mjs`, `*.config.*` or framework route files, must opt out:
+`ai-rules/no-default-export` reports both `export default` and `export { value as default }`. The presets automatically disable it for `*.config.{js,mjs,cjs,ts}` and, in the `nextjs` preset, for files that require default exports (`page.tsx`, `layout.tsx`, error files, metadata files, `middleware.ts` and `proxy.ts`). For custom projects or additional framework files, declare an override:
 
 ```ts
 {
-  files: ['*.config.*', 'eslint.config.mjs', 'src/pages/**/*'],
+  files: ['src/pages/**/*'],
   rules: {
     'ai-rules/no-default-export': 'off',
   },
@@ -1116,11 +1176,13 @@ The original rule options, messages and docs are preserved. Settings still use t
 
 When `relations` is configured, `projects()` enables `ai-rules/dependencies` with the generated layer policies. The rule is backed by `eslint-plugin-boundaries`, and its settings remain under `boundaries/*`.
 
-The plugin also configures the `import-x` resolver with:
+The plugin configures `import-x/resolver-next` with the TypeScript resolver when a `tsconfig.json` is available, followed by the node resolver:
 
 ```ts
-extensions: ['.ts', '.tsx', '.d.ts', '.js', '.jsx']
+extensions: ['.ts', '.tsx', '.d.ts', '.js', '.jsx', '.mjs', '.cjs']
 ```
+
+`ai-rules/no-unresolved` ignores style, image, font and media imports by default.
 
 ## Disabling or changing rules
 
@@ -1180,13 +1242,37 @@ aiRules.configs.projects([
 ])
 ```
 
+### Option 3: per-project `overrides`
+
+Use `overrides` to change rules only for specific files inside a project:
+
+```ts
+aiRules.configs.projects([
+  {
+    rootFolder: 'apps/web',
+    preset: 'nextjs',
+    overrides: [
+      {
+        files: ['src/shared/pages/**/*.tsx'],
+        rules: {
+          'ai-rules/no-default-export': 'off',
+        },
+      },
+    ],
+  },
+])
+```
+
+`files` are relative to `rootFolder` and receive the same project prefix as the base config.
+
 Precedence inside `projects()` is:
 
 1. `recommended` rules
 2. automatic `project-structure`, `filename-pascal-case` and `dependencies` rules
 3. `preset.rules`
-4. project `rules`
-5. any flat config placed after `projects()` in the ESLint config array
+4. preset and project `overrides` for the matching files
+5. project `rules`
+6. any flat config placed after `projects()` in the ESLint config array
 
 The `rules` option uses the same shape as ESLint, including options arrays:
 
@@ -1204,10 +1290,11 @@ rules: {
 | You use | What is enabled |
 |---------|-----------------|
 | `aiRules.configs.recommended` | bundled rules + configuration warning |
-| `aiRules.configs.projects([...])` | recommended rules + `project-structure` |
-| `projects([...])` with `preset: 'frontend' \| 'nextjs' \| 'backend'` | preset structure + preset relations |
+| `aiRules.configs.projects([...])` | recommended rules + `project-structure` + TypeScript resolver |
+| `projects([...])` with `preset: 'frontend' \| 'nextjs' \| 'backend'` | preset structure + preset relations + preset overrides |
 | `projects([...])` with `structure` | structure validation |
 | `projects([...])` with `relations` | `ai-rules/dependencies` |
+| `projects([...])` with `overrides` | file-scoped rule overrides |
 | `projects([...])` with both | structure + relations |
 
 `projects()` does **not** configure the TypeScript parser. Pair it with `typescript-eslint` as shown in the examples.

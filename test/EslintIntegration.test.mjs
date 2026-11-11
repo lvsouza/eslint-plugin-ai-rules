@@ -303,3 +303,62 @@ test('ESLint applies nested parent and child configs correctly', async () => {
     ['fileNotAllowed', 'fileNotAllowed'],
   )
 })
+
+test('ESLint allows default exports required by Next.js and config files', async () => {
+  const root = projectPath('next-defaults')
+
+  write(
+    'next-defaults/src/app/page.tsx',
+    'export default function Page() { return null }\n',
+  )
+  write('next-defaults/eslint.config.mjs', 'export default []\n')
+  write(
+    'next-defaults/src/shared/helpers/Bad.ts',
+    'export default function Bad() { return null }\n',
+  )
+
+  const configs = aiRules.configs.projects([
+    { rootFolder: root, preset: 'nextjs' },
+  ])
+  const results = await lint(
+    configs,
+    [
+      projectPath('next-defaults/src/app/page.tsx'),
+      projectPath('next-defaults/eslint.config.mjs'),
+      projectPath('next-defaults/src/shared/helpers/Bad.ts'),
+    ],
+  )
+  const messages = messagesFor(results, 'ai-rules/no-default-export')
+
+  assert.equal(messages.length, 1)
+  assert.match(messages[0].message, /Prefer named exports/)
+})
+
+test('ESLint resolves TypeScript aliases for no-unresolved', async () => {
+  const root = projectPath('unresolved')
+
+  writeJson('unresolved/tsconfig.json', {
+    compilerOptions: {
+      paths: {
+        '@/*': ['./src/*'],
+      },
+    },
+  })
+  write('unresolved/src/shared/helpers/Format.ts', 'export const value = 1\n')
+  write(
+    'unresolved/src/app/page.tsx',
+    "import '@/shared/helpers/Format'\nimport '@/shared/helpers/Missing'\nimport './globals.css'\nexport default function Page() { return null }\n",
+  )
+
+  const configs = aiRules.configs.projects([
+    { rootFolder: root, preset: 'nextjs' },
+  ])
+  const results = await lint(
+    configs,
+    [projectPath('unresolved/src/app/page.tsx')],
+  )
+  const messages = messagesFor(results, 'ai-rules/no-unresolved')
+
+  assert.equal(messages.length, 1)
+  assert.match(messages[0].message, /Missing/)
+})

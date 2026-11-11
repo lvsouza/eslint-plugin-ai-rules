@@ -10,6 +10,14 @@ function projectSettings(config) {
   return config.settings['ai-rules'].project
 }
 
+function baseConfigs(configs) {
+  return configs.filter((config) =>
+    config.files?.some((pattern) =>
+      pattern.endsWith('**/*.{js,cjs,mjs,jsx,ts,tsx}'),
+    ),
+  )
+}
+
 test('creates a frontend config from a preset', () => {
   const [config] = projects([
     { rootFolder: '.', preset: 'frontend' },
@@ -19,9 +27,9 @@ test('creates a frontend config from a preset', () => {
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
   assert.equal(config.rules['ai-rules/filename-pascal-case'], 'off')
   assert.equal(config.rules['ai-rules/no-default-export'], 'error')
-  assert.equal(
+  assert.deepEqual(
     config.rules['ai-rules/no-relative-parent-imports'],
-    'error',
+    ['error', { ignore: ['^(?!\\.)'] }],
   )
   assert.ok(config.ignores.includes('src/shared/services/generated/**'))
   assert.equal(projectSettings(config).preset, 'frontend')
@@ -34,13 +42,15 @@ test('prefixes files and ignores for monorepo projects', () => {
     { rootFolder: 'apps/api', preset: 'backend' },
   ])
 
-  assert.equal(configs.length, 2)
-  assert.deepEqual(configs[0].files, [
+  const bases = baseConfigs(configs)
+
+  assert.equal(bases.length, 2)
+  assert.deepEqual(bases[0].files, [
     'apps/web/**/*.{js,cjs,mjs,jsx,ts,tsx}',
   ])
-  assert.ok(configs[0].ignores.includes('apps/web/dist/**'))
-  assert.equal(projectSettings(configs[0]).rootFolder, 'apps/web')
-  assert.equal(projectSettings(configs[1]).rootFolder, 'apps/api')
+  assert.ok(bases[0].ignores.includes('apps/web/dist/**'))
+  assert.equal(projectSettings(bases[0]).rootFolder, 'apps/web')
+  assert.equal(projectSettings(bases[1]).rootFolder, 'apps/api')
 })
 
 test('supports nested roots and ignores child roots on the parent config', () => {
@@ -50,11 +60,13 @@ test('supports nested roots and ignores child roots on the parent config', () =>
     { rootFolder: 'apps/web/admin', preset: 'backend' },
   ])
 
-  assert.equal(configs.length, 3)
-  assert.ok(configs[0].ignores.includes('apps/web/**'))
-  assert.ok(configs[0].ignores.includes('apps/web/admin/**'))
-  assert.ok(configs[1].ignores.includes('apps/web/admin/**'))
-  assert.equal(configs[2].settings['ai-rules'].project.rootFolder, 'apps/web/admin')
+  const bases = baseConfigs(configs)
+
+  assert.equal(bases.length, 3)
+  assert.ok(bases[0].ignores.includes('apps/web/**'))
+  assert.ok(bases[0].ignores.includes('apps/web/admin/**'))
+  assert.ok(bases[1].ignores.includes('apps/web/admin/**'))
+  assert.equal(bases[2].settings['ai-rules'].project.rootFolder, 'apps/web/admin')
 })
 
 test('builds boundaries config from relations', () => {
@@ -1045,4 +1057,215 @@ test('creates a nextjs config from a preset', () => {
   assert.equal(config.rules['ai-rules/project-structure'], 'error')
   assert.equal(projectSettings(config).preset, 'nextjs')
   assert.ok(projectSettings(config).structure.folders.src.folders.app)
+
+  const sharedPages =
+    projectSettings(config).structure.folders.src.folders.shared.folders.pages
+  const pageNode = sharedPages.folders['[page]']
+
+  assert.ok(pageNode)
+  assert.equal(pageNode.name.case, 'kebab-case')
+  assert.ok(pageNode.folders.components)
+  assert.ok(pageNode.folders.hooks)
+  assert.ok(pageNode.folders.services)
+  assert.ok(pageNode.folders.contexts)
+  assert.ok(pageNode.folders.helpers)
+
+  const structure = projectSettings(config).structure
+
+  assert.ok(structure.folders.src.folders.shared.folders.assets)
+  assert.ok(structure.folders.src.files.includes('proxy.ts'))
+  assert.ok(structure.folders.src.files.includes('instrumentation-client.ts'))
+  assert.ok(structure.folders.src.folders.app.files.includes('global-not-found.tsx'))
+  assert.ok(structure.ignoredPaths.includes('next-env.d.ts'))
+  assert.ok(structure.ignoredPaths.includes('.next/**'))
+  assert.ok(structure.ignoredPaths.includes('out/**'))
+
+  const relations = projectSettings(config).relations
+  const layerPaths = (name) => (
+    Array.isArray(relations.layers[name])
+      ? relations.layers[name]
+      : [relations.layers[name]]
+  )
+
+  assert.equal(relations.layers.app, 'src/app')
+  assert.ok(layerPaths('pageComponent').includes('src/shared/pages/*/components'))
+  assert.ok(layerPaths('pageHook').includes('src/shared/pages/*/hooks'))
+  assert.ok(layerPaths('pageService').includes('src/shared/pages/*/services'))
+  assert.ok(layerPaths('pageContext').includes('src/shared/pages/*/contexts'))
+  assert.ok(layerPaths('pageHelper').includes('src/shared/pages/*/helpers'))
+  assert.ok(layerPaths('page').includes('src/shared/pages/*'))
+})
+
+test('presets emit file-scoped default export overrides', () => {
+  const configs = projects([
+    { rootFolder: 'apps/web', preset: 'nextjs' },
+  ])
+
+  const configOverride = configs.find((config) =>
+    config.files?.includes('apps/web/*.config.{js,mjs,cjs,ts}'),
+  )
+  const nextOverride = configs.find((config) =>
+    config.files?.includes('apps/web/src/app/**/page.tsx'),
+  )
+
+  assert.ok(configOverride)
+  assert.ok(nextOverride)
+  assert.equal(
+    configOverride.rules['ai-rules/no-default-export'],
+    'off',
+  )
+  assert.equal(
+    nextOverride.rules['ai-rules/no-default-export'],
+    'off',
+  )
+})
+
+test('accepts project rule overrides and keeps project rules last', () => {
+  const configs = projects([
+    {
+      rootFolder: '.',
+      preset: 'other',
+      overrides: [
+        {
+          files: ['src/**/*.ts'],
+          rules: {
+            'ai-rules/no-default-export': 'off',
+          },
+        },
+      ],
+      rules: {
+        'ai-rules/no-default-export': 'error',
+      },
+    },
+  ])
+
+  const override = configs.find((config) =>
+    config.files?.includes('src/**/*.ts'),
+  )
+
+  assert.ok(override)
+  assert.equal(override.rules['ai-rules/no-default-export'], 'error')
+})
+
+test('configures the TypeScript resolver when tsconfig exists', () => {
+  const [withTsconfig] = projects([
+    { rootFolder: '.', preset: 'other' },
+  ])
+  const [withoutTsconfig] = projects([
+    { rootFolder: 'apps/no-tsconfig', preset: 'other' },
+  ])
+
+  assert.equal(withTsconfig.settings['import-x/resolver-next'].length, 2)
+  assert.equal(withoutTsconfig.settings['import-x/resolver-next'].length, 1)
+})
+
+test('validates the structure after merging preset and custom folders', () => {
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        preset: 'frontend',
+        structure: {
+          folders: {
+            src: {
+              folders: {
+                pages: {
+                  folders: {
+                    '[another]': {
+                      name: { case: 'kebab-case' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ]),
+    /only one dynamic folder per level/,
+  )
+})
+
+test('rejects unsupported structure properties', () => {
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        structure: {
+          folders: {
+            src: {
+              file: ['index.ts'],
+            },
+          },
+        },
+      },
+    ]),
+    /not a supported property/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        structure: {
+          folders: {
+            src: {
+              files: [
+                {
+                  extensions: ['.ts'],
+                  extension: '.ts',
+                },
+              ],
+            },
+          },
+        },
+      },
+    ]),
+    /not a supported property/,
+  )
+})
+
+test('validates project rule overrides', () => {
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        preset: 'other',
+        overrides: {},
+      },
+    ]),
+    /overrides must be an array/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        preset: 'other',
+        overrides: [
+          {
+            files: [],
+            rules: {},
+          },
+        ],
+      },
+    ]),
+    /files must be a non-empty array/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        preset: 'other',
+        overrides: [
+          {
+            files: ['src/**/*.ts'],
+            rules: 'off',
+          },
+        ],
+      },
+    ]),
+    /rules must be an object/,
+  )
 })

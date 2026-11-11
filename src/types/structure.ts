@@ -47,18 +47,25 @@ export interface IRelationsConfig {
   scope?: IRelationsScope
 }
 
+export interface IProjectRulesOverride {
+  files: string[]
+  rules: Linter.RulesRecord
+}
+
 export interface IProjectDefinition {
   rootFolder: string
   preset?: TProjectPreset
   structure?: IProjectStructure
   relations?: IRelationsConfig
   rules?: Linter.RulesRecord
+  overrides?: IProjectRulesOverride[]
 }
 
 export interface IProjectPreset {
   structure: IProjectStructure
   relations?: IRelationsConfig
   rules?: Linter.RulesRecord
+  overrides?: IProjectRulesOverride[]
 }
 
 export interface IResolvedProject {

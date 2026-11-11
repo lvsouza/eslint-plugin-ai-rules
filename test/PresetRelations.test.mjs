@@ -103,6 +103,7 @@ for (const file of [
 for (const file of [
   'src/app/layout.tsx',
   'src/app/page.tsx',
+  'src/app/orders/page.tsx',
   'src/shared/components/Button.tsx',
   'src/shared/components/ui/Input.tsx',
   'src/shared/hooks/UseAuth.ts',
@@ -112,6 +113,15 @@ for (const file of [
   'src/shared/helpers/Format.ts',
   'src/shared/constants/Values.ts',
   'src/shared/env/index.ts',
+  'src/shared/pages/orders/Orders.tsx',
+  'src/shared/pages/orders/helpers.ts',
+  'src/shared/pages/orders/components/OrderCard.tsx',
+  'src/shared/pages/orders/hooks/UseOrders.ts',
+  'src/shared/pages/orders/services/Orders.ts',
+  'src/shared/pages/orders/contexts/OrdersContext.tsx',
+  'src/shared/pages/orders/helpers/Format.ts',
+  'src/shared/pages/users/components/UserCard.tsx',
+  'src/shared/pages/users/helpers/Format.ts',
 ]) {
   writeProjectFile(nextjsDir, file, 'export const value = 1\n')
 }
@@ -409,6 +419,77 @@ test('nextjs preset blocks shared components from importing internal folders', (
     nextjsLint(
       'src/shared/components/Button.tsx',
       "import '@/shared/components/ui/Input'\n",
+    ).length,
+    0,
+  )
+})
+
+test('nextjs preset allows shared page locals to import globals and same-page resources', () => {
+  assert.equal(
+    nextjsLint(
+      'src/shared/pages/orders/Orders.tsx',
+      "import '@/shared/components/Button'\nimport '@/shared/pages/orders/components/OrderCard'\nimport '@/shared/pages/orders/hooks/UseOrders'\n",
+    ).length,
+    0,
+  )
+  assert.equal(
+    nextjsLint(
+      'src/shared/pages/orders/components/OrderCard.tsx',
+      "import '@/shared/pages/orders/helpers/Format'\n",
+    ).length,
+    0,
+  )
+})
+
+test('nextjs preset blocks cross shared-page imports', () => {
+  assert.equal(
+    nextjsLint(
+      'src/shared/pages/orders/Orders.tsx',
+      "import '@/shared/pages/users/helpers/Format'\n",
+    ).length,
+    1,
+  )
+  assert.equal(
+    nextjsLint(
+      'src/shared/pages/orders/components/OrderCard.tsx',
+      "import '@/shared/pages/users/components/UserCard'\n",
+    ).length,
+    1,
+  )
+})
+
+test('nextjs preset blocks global layers from importing shared pages', () => {
+  assert.equal(
+    nextjsLint(
+      'src/shared/components/Button.tsx',
+      "import '@/shared/pages/orders/components/OrderCard'\n",
+    ).length,
+    1,
+  )
+})
+
+test('nextjs preset blocks other layers from importing app routes', () => {
+  assert.equal(
+    nextjsLint(
+      'src/shared/components/Button.tsx',
+      "import '@/app/orders/page'\n",
+    ).length,
+    1,
+  )
+  assert.equal(
+    nextjsLint(
+      'src/shared/pages/orders/components/OrderCard.tsx',
+      "import '@/app/orders/page'\n",
+    ).length,
+    1,
+  )
+})
+
+test('nextjs preset allows app routes to import shared layers', () => {
+  assert.equal(
+    nextjsLint(
+      'src/app/orders/page.tsx',
+      "import '@/shared/components/Button'\nimport '@/shared/services/AuthService'\n",
     ).length,
     0,
   )

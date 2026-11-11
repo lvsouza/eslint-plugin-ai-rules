@@ -101,8 +101,14 @@ function toTypescriptConfig(config) {
   }
 }
 
-const structureConfigs = projectConfigs.map(toStructureConfig)
-const typescriptConfigs = projectConfigs.map(toTypescriptConfig)
+const baseProjectConfigs = projectConfigs.filter((config) =>
+  Object.hasOwn(config.rules ?? {}, 'ai-rules/project-structure'),
+)
+const overrideConfigs = projectConfigs.filter(
+  (config) => !baseProjectConfigs.includes(config),
+)
+const structureConfigs = baseProjectConfigs.map(toStructureConfig)
+const typescriptConfigs = baseProjectConfigs.map(toTypescriptConfig)
 
 export default defineConfig([
   globalIgnores(['dist', 'node_modules', 'coverage']),
@@ -131,6 +137,7 @@ export default defineConfig([
   },
   ...structureConfigs,
   ...typescriptConfigs,
+  ...overrideConfigs,
   {
     files: ['src/index.ts', 'eslint.config.mjs', 'tsup.config.ts'],
     rules: { 'ai-rules/no-default-export': 'off' },

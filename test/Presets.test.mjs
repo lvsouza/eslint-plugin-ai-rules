@@ -44,6 +44,7 @@ const validFrontendPaths = [
   'src/pages/orders/contexts/OrdersContext.tsx',
   'src/pages/orders/helpers/Format.ts',
   'src/shared/helpers/Format.ts',
+  'src/shared/assets/index.ts',
   'src/shared/services/generated/admin-backend/models/index.ts',
   'src/shared/utils/FormatDate.ts',
   'e2e/pages/LoginPage.ts',
@@ -61,6 +62,7 @@ const invalidFrontendPaths = [
   ['src/components/ui/Button.tsx', 'folderNotAllowed'],
   ['src/services/random.ts', 'folderNotAllowed'],
   ['src/shared/services/random.ts', 'fileNotAllowed'],
+  ['src/shared/assets/Icon.tsx', 'fileNotAllowed'],
   ['random.ts', 'fileNotAllowed'],
 ]
 
@@ -80,15 +82,31 @@ const validNextjsPaths = [
   'src/app/opengraph-image.tsx',
   'src/app/icon.tsx',
   'src/app/providers.tsx',
+  'src/app/global-not-found.tsx',
   'src/app/(marketing)/page.tsx',
   'src/app/(shop)/products/[slug]/page.tsx',
   'src/app/blog/[...slugs]/page.tsx',
   'src/app/dashboard/@modal/default.tsx',
   'src/app/api/users/route.ts',
   'src/middleware.ts',
+  'src/proxy.ts',
   'src/instrumentation.ts',
+  'src/instrumentation-client.ts',
+  'next-env.d.ts',
+  '.next/server/page.ts',
+  'out/static.ts',
   'src/shared/components/ui/Button.tsx',
+  'src/shared/assets/index.ts',
   'src/pages/orders/Orders.tsx',
+  'src/shared/pages/orders/Orders.tsx',
+  'src/shared/pages/orders/helpers.ts',
+  'src/shared/pages/orders/schema.ts',
+  'src/shared/pages/orders/types.ts',
+  'src/shared/pages/orders/components/OrderCard.tsx',
+  'src/shared/pages/orders/hooks/UseOrders.ts',
+  'src/shared/pages/orders/services/Orders.ts',
+  'src/shared/pages/orders/contexts/OrdersContext.tsx',
+  'src/shared/pages/orders/helpers/Format.ts',
 ]
 
 const invalidNextjsPaths = [
@@ -96,6 +114,11 @@ const invalidNextjsPaths = [
   ['src/app/dashboard/Button.tsx', 'fileNotAllowed'],
   ['src/app/page.js', 'fileNotAllowed'],
   ['src/pages/MyFeature/Dashboard.tsx', 'folderNameMismatch'],
+  ['src/shared/pages/Orders.tsx', 'fileNotAllowed'],
+  ['src/shared/pages/MyPage/Orders.tsx', 'folderNameMismatch'],
+  ['src/shared/pages/orders/orders.tsx', 'fileNameMismatch'],
+  ['src/shared/pages/orders/nope.ts', 'fileNotAllowed'],
+  ['src/shared/pages/orders/utils/Helpers.ts', 'folderNotAllowed'],
 ]
 
 const validBackendPaths = [

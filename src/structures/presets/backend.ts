@@ -1,5 +1,5 @@
+import { commonIgnoredPaths, configFileDefaultExportOverride, pascalTs } from './helpers'
 import type { IProjectPreset, IRelationsConfig } from '@/types/structure'
-import { commonIgnoredPaths, pascalTs } from './helpers'
 
 
 const backendRelations: IRelationsConfig = {
@@ -215,4 +215,5 @@ export const backendPreset: IProjectPreset = {
     ],
   },
   relations: backendRelations,
+  overrides: [configFileDefaultExportOverride],
 }

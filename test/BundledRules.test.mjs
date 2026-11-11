@@ -90,7 +90,7 @@ test('recommended and projects expose only ai-rules rules and plugins', () => {
   ])
 
   for (const ruleId of Object.keys(aiRules.configs.recommended[0].rules)) {
-    assert.match(ruleId, /^(?:ai-rules\/|max-len$)/)
+    assert.match(ruleId, /^(?:ai-rules\/|max-len$|no-debugger$)/)
   }
 
   const [config] = aiRules.configs.projects([

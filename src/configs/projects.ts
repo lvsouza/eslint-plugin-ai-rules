@@ -1,8 +1,9 @@
 import type { Linter } from 'eslint'
 import path from 'node:path'
 
-import type { IProjectDefinition, IProjectPreset, IProjectStructure, TProjectPreset, } from '@/types/structure'
+import type { IProjectDefinition, IProjectPreset, IProjectRulesOverride, IProjectStructure, TProjectPreset, } from '@/types/structure'
 import { buildRelationsRuleOptions, buildRelationsSettings } from '@/structures/buildRelationsConfig'
+import { buildImportResolvers } from '@/utils/buildImportResolvers'
 import { hasStructureRules } from '@/structures/hasStructureRules'
 import { validateRelations } from '@/structures/validateRelations'
 import { validateStructure } from '@/structures/validateStructure'
@@ -44,6 +45,49 @@ function findNestedRoots(
   return definitions
     .map((definition) => definition.rootFolder)
     .filter((candidate) => isInside(rootFolder, candidate))
+}
+
+function isRulesRecord(value: unknown): value is Linter.RulesRecord {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value)
+  )
+}
+
+function validateRulesOverrides(
+  value: unknown,
+  label: string,
+): asserts value is IProjectRulesOverride[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} overrides must be an array.`)
+  }
+
+  value.forEach((entry, index) => {
+    const overridePath = `${label} overrides[${index}]`
+
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`${overridePath} must be an object.`)
+    }
+
+    const override = entry as Record<string, unknown>
+
+    if (!Array.isArray(override.files) || override.files.length === 0) {
+      throw new Error(`${overridePath}.files must be a non-empty array.`)
+    }
+
+    override.files.forEach((file, fileIndex) => {
+      if (typeof file !== 'string' || file.trim().length === 0) {
+        throw new Error(
+          `${overridePath}.files[${fileIndex}] must be a non-empty string.`,
+        )
+      }
+    })
+
+    if (!isRulesRecord(override.rules)) {
+      throw new Error(`${overridePath}.rules must be an object.`)
+    }
+  })
 }
 
 function validateDefinition(
@@ -96,25 +140,45 @@ function validateDefinition(
     }
   }
 
-  if (
-    definition.rules !== undefined &&
-    (
-      typeof definition.rules !== 'object' ||
-      definition.rules === null ||
-      Array.isArray(definition.rules)
-    )
-  ) {
+  if (!isRulesRecord(definition.rules) && definition.rules !== undefined) {
     throw new Error(
       `Invalid project at index ${index}: rules must be an object.`,
     )
+  }
+
+  if (definition.overrides !== undefined) {
+    try {
+      validateRulesOverrides(
+        definition.overrides,
+        `Invalid project at index ${index}:`,
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+
+      throw new Error(message, { cause: error })
+    }
   }
 }
 
 function resolveStructure(
   definition: IProjectDefinition,
-  preset?: IProjectPreset,
+  preset: IProjectPreset | undefined,
+  index: number,
 ): IProjectStructure {
-  return mergeStructure(preset?.structure, definition.structure)
+  const structure = mergeStructure(preset?.structure, definition.structure)
+
+  try {
+    validateStructure(structure)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+
+    throw new Error(
+      `Invalid project at index ${index}: merged structure is invalid. ${message}`,
+      { cause: error },
+    )
+  }
+
+  return structure
 }
 
 export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
@@ -143,9 +207,11 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     seenRoots.add(definition.rootFolder)
   }
 
-  return normalizedDefinitions.map((definition, index) => {
+  const configs: Linter.Config[] = []
+
+  normalizedDefinitions.forEach((definition, index) => {
     const preset = definition.preset ? getPreset(definition.preset) : undefined
-    const structure = resolveStructure(definition, preset)
+    const structure = resolveStructure(definition, preset, index)
     const structureEnabled = hasStructureRules(structure)
     const relations = mergeRelations(preset?.relations, definition.relations)
 
@@ -192,29 +258,53 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
       ...(preset?.rules ?? {}),
       ...(definition.rules ?? {}),
     }
-
-    return {
+    const settings = {
+      ...baseConfig.settings,
+      'import-x/resolver-next': buildImportResolvers(rootAbsolutePath),
+      ...(relations
+        ? buildRelationsSettings(relations, rootAbsolutePath)
+        : {}),
+      'ai-rules': {
+        project: {
+          rootFolder: definition.rootFolder,
+          preset: definition.preset,
+          structure,
+          relations,
+        },
+      },
+    }
+    const sharedConfig = {
       ...baseConfig,
       plugins: {
         ...baseConfig.plugins,
       },
-      files: [`${rootPrefix}**/*.{js,cjs,mjs,jsx,ts,tsx}`],
       ...(ignoredPaths.length > 0 ? { ignores: ignoredPaths } : {}),
-      settings: {
-        ...baseConfig.settings,
-        ...(relations
-          ? buildRelationsSettings(relations, rootAbsolutePath)
-          : {}),
-        'ai-rules': {
-          project: {
-            rootFolder: definition.rootFolder,
-            preset: definition.preset,
-            structure,
-            relations,
-          },
-        },
-      },
+      settings,
+    }
+
+    configs.push({
+      ...sharedConfig,
+      files: [`${rootPrefix}**/*.{js,cjs,mjs,jsx,ts,tsx}`],
       rules,
+    })
+
+    const overrides = [
+      ...(preset?.overrides ?? []),
+      ...(definition.overrides ?? []),
+    ]
+
+    for (const override of overrides) {
+      configs.push({
+        ...sharedConfig,
+        files: override.files.map((file) => `${rootPrefix}${file}`),
+        rules: {
+          ...override.rules,
+          ...(preset?.rules ?? {}),
+          ...(definition.rules ?? {}),
+        },
+      })
     }
   })
+
+  return configs
 }

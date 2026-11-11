@@ -25,9 +25,9 @@ test('ESM exports are wired correctly', () => {
   assert.equal(plugin.rules['project-structure'], projectStructure)
   assert.equal(recommended[0].rules['ai-rules/project-setup'], 'warn')
   assert.equal(recommended[0].rules['ai-rules/no-default-export'], 'error')
-  assert.equal(
+  assert.deepEqual(
     recommended[0].rules['ai-rules/no-relative-parent-imports'],
-    'error',
+    ['error', { ignore: ['^(?!\\.)'] }],
   )
   assert.deepEqual(Object.keys(recommended[0].plugins), ['ai-rules'])
   assert.ok(aiRules.rules['no-duplicates'])
@@ -64,8 +64,12 @@ test('rule names are stable and kebab-cased', () => {
     'naming-convention',
     'no-default-export',
     'no-duplicates',
+    'no-explicit-any',
     'no-multiline-imports',
+    'no-non-null-assertion',
     'no-relative-parent-imports',
+    'no-self-import',
+    'no-unresolved',
     'no-unused-vars',
     'project-setup',
     'semi',

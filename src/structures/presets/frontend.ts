@@ -1,4 +1,4 @@
-import { commonIgnoredPaths, pascalTs, pascalTsOrTsx, pascalTsx } from './helpers'
+import { commonIgnoredPaths, configFileDefaultExportOverride, pascalTs, pascalTsOrTsx, pascalTsx } from './helpers'
 import type { IProjectPreset, IRelationsConfig } from '@/types/structure'
 
 
@@ -222,6 +222,14 @@ export const frontendPreset: IProjectPreset = {
         folders: {
           shared: {
             folders: {
+              assets: {
+                files: [
+                  'index.ts',
+                  '*.{png,jpg,jpeg,gif,svg,webp,avif,ico}',
+                  '*.{woff,woff2,ttf,otf}',
+                  '*.{mp4,webm,mp3,wav,pdf}',
+                ],
+              },
               components: {
                 files: [pascalTsx],
                 folders: {
@@ -362,9 +370,14 @@ export const frontendPreset: IProjectPreset = {
       ...commonIgnoredPaths,
       'playwright-report/**',
       'test-results/**',
+      'storybook-static/**',
+      '.storybook/**',
+      '.turbo/**',
+      '.vercel/**',
       'src/shared/services/generated/**',
       'scripts/types/**',
     ],
   },
   relations: frontendRelations,
+  overrides: [configFileDefaultExportOverride],
 }
