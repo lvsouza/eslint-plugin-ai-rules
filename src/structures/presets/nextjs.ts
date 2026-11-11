@@ -1,11 +1,22 @@
 import type { IProjectPreset, IProjectRulesOverride, IRelationsConfig, IStructureNode, TFileRule } from '@/types/structure'
 import { configFileDefaultExportOverride, pascalTs, pascalTsx } from './helpers'
+import { BUNDLED_RULE_IDS, RULE_IDS } from '@/rules/constants'
 import { frontendPreset, frontendRelations } from './frontend'
 import { mergeStructure } from '@/structures/mergeStructure'
-import { BUNDLED_RULE_IDS } from '@/rules/constants'
 
 
 const NEXT_APP_ROUTE_DEPTH = 10
+const NEXT_ROUTE_SEGMENT_PATTERN = [
+  '^(?:',
+  '[a-z0-9]+(?:-[a-z0-9]+)*',
+  '|\\([a-z0-9]+(?:-[a-z0-9]+)*\\)',
+  '|@[a-z0-9]+(?:-[a-z0-9]+)*',
+  '|(?:\\(\\.{1,3}\\))+(?:[a-z0-9]+(?:-[a-z0-9]+)*|\\[[^\\]]+\\])',
+  '|\\[[a-z0-9]+(?:-[a-z0-9]+)*\\]',
+  '|\\[\\.\\.\\.[a-z0-9]+(?:-[a-z0-9]+)*\\]',
+  '|\\[\\[\\.\\.\\.[a-z0-9]+(?:-[a-z0-9]+)*\\]\\]',
+  ')$',
+].join('')
 
 const nextAppFiles: TFileRule[] = [
   'layout.tsx',
@@ -36,6 +47,7 @@ function nextAppRouteNode(depth: number): IStructureNode {
   if (depth <= 0) return { ignore: true }
 
   return {
+    name: { pattern: NEXT_ROUTE_SEGMENT_PATTERN },
     files: nextAppFiles,
     folders: {
       '[route]': nextAppRouteNode(depth - 1),
@@ -177,6 +189,9 @@ const nextjsStructure = mergeStructure(frontendPreset.structure, {
 export const nextjsPreset: IProjectPreset = {
   structure: nextjsStructure,
   relations: nextjsRelations,
+  rules: {
+    [RULE_IDS.appPageScope]: 'error',
+  },
   overrides: [
     configFileDefaultExportOverride,
     nextjsDefaultExportOverride,

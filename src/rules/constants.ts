@@ -1,4 +1,5 @@
 export const RULE_NAMES = {
+  appPageScope: 'app-page-scope',
   filenamePascalCase: 'filename-pascal-case',
   noMultilineImports: 'no-multiline-imports',
   projectSetup: 'project-setup',
@@ -7,6 +8,7 @@ export const RULE_NAMES = {
 } as const
 
 export const RULE_IDS = {
+  appPageScope: `ai-rules/${RULE_NAMES.appPageScope}`,
   filenamePascalCase: `ai-rules/${RULE_NAMES.filenamePascalCase}`,
   noMultilineImports: `ai-rules/${RULE_NAMES.noMultilineImports}`,
   projectSetup: `ai-rules/${RULE_NAMES.projectSetup}`,
@@ -22,6 +24,12 @@ export const BUNDLED_RULE_NAMES = {
   noNonNullAssertion: 'no-non-null-assertion',
   noSelfImport: 'no-self-import',
   noUnresolved: 'no-unresolved',
+  noUselessPathSegments: 'no-useless-path-segments',
+  noExtraneousDependencies: 'no-extraneous-dependencies',
+  noCycle: 'no-cycle',
+  noFloatingPromises: 'no-floating-promises',
+  noMisusedPromises: 'no-misused-promises',
+  awaitThenable: 'await-thenable',
   semi: 'semi',
   consistentTypeImports: 'consistent-type-imports',
   noUnusedVars: 'no-unused-vars',
@@ -37,6 +45,12 @@ export const BUNDLED_RULE_IDS = {
   noNonNullAssertion: `ai-rules/${BUNDLED_RULE_NAMES.noNonNullAssertion}`,
   noSelfImport: `ai-rules/${BUNDLED_RULE_NAMES.noSelfImport}`,
   noUnresolved: `ai-rules/${BUNDLED_RULE_NAMES.noUnresolved}`,
+  noUselessPathSegments: `ai-rules/${BUNDLED_RULE_NAMES.noUselessPathSegments}`,
+  noExtraneousDependencies: `ai-rules/${BUNDLED_RULE_NAMES.noExtraneousDependencies}`,
+  noCycle: `ai-rules/${BUNDLED_RULE_NAMES.noCycle}`,
+  noFloatingPromises: `ai-rules/${BUNDLED_RULE_NAMES.noFloatingPromises}`,
+  noMisusedPromises: `ai-rules/${BUNDLED_RULE_NAMES.noMisusedPromises}`,
+  awaitThenable: `ai-rules/${BUNDLED_RULE_NAMES.awaitThenable}`,
   semi: `ai-rules/${BUNDLED_RULE_NAMES.semi}`,
   consistentTypeImports: `ai-rules/${BUNDLED_RULE_NAMES.consistentTypeImports}`,
   noUnusedVars: `ai-rules/${BUNDLED_RULE_NAMES.noUnusedVars}`,

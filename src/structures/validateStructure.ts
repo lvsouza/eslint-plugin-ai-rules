@@ -1,4 +1,5 @@
 import type { IProjectStructure } from '@/types/structure'
+import { assertKnownKeys } from '@/utils/assertKnownKeys'
 import { isNameCase } from '@/utils/matchNameRule'
 
 
@@ -25,20 +26,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function assertKnownKeys(
-  value: Record<string, unknown>,
-  allowed: Set<string>,
-  path: string,
-): void {
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) {
-      throw new Error(
-        `Invalid structure: "${path}.${key}" is not a supported property.`,
-      )
-    }
-  }
-}
-
 function assertString(value: unknown, path: string): asserts value is string {
   if (typeof value !== 'string' || value.length === 0) {
     throw new Error(`Invalid structure: "${path}" must be a non-empty string.`)
@@ -60,7 +47,7 @@ function validateNameRule(value: unknown, path: string): void {
     throw new Error(`Invalid structure: "${path}" must be an object.`)
   }
 
-  assertKnownKeys(value, NAME_RULE_KEYS, path)
+  assertKnownKeys(value, NAME_RULE_KEYS, path, 'Invalid structure')
 
   if (value.case !== undefined) {
     if (typeof value.case !== 'string' || !isNameCase(value.case)) {
@@ -85,7 +72,7 @@ function validateFileRule(value: unknown, path: string): void {
     throw new Error(`Invalid structure: "${path}" must be a string or an object.`)
   }
 
-  assertKnownKeys(value, FILE_RULE_KEYS, path)
+  assertKnownKeys(value, FILE_RULE_KEYS, path, 'Invalid structure')
 
   if (!Array.isArray(value.extensions) || value.extensions.length === 0) {
     throw new Error(
@@ -131,7 +118,12 @@ function validateNode(
     throw new Error(`Invalid structure: "${path}" must be an object.`)
   }
 
-  assertKnownKeys(value, isRoot ? ROOT_KEYS : NODE_KEYS, path)
+  assertKnownKeys(
+    value,
+    isRoot ? ROOT_KEYS : NODE_KEYS,
+    path,
+    'Invalid structure',
+  )
 
   if (value.name !== undefined) {
     if (isRoot) {

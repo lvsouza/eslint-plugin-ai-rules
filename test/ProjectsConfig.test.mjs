@@ -1,10 +1,23 @@
 import assert from 'node:assert/strict'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { test } from 'node:test'
+import { after, test } from 'node:test'
 
 import aiRules, { presets } from '../dist/index.js'
 
 const { projects } = aiRules.configs
+const tempRoot = mkdtempSync(path.join(process.cwd(), '.tmp-projects-config-'))
+
+function writeTemp(relativePath, content) {
+  const fullPath = path.join(tempRoot, relativePath)
+
+  mkdirSync(path.dirname(fullPath), { recursive: true })
+  writeFileSync(fullPath, content)
+}
+
+after(() => {
+  rmSync(tempRoot, { recursive: true, force: true })
+})
 
 function projectSettings(config) {
   return config.settings['ai-rules'].project
@@ -540,17 +553,17 @@ test('validates project definitions', () => {
 
   assert.throws(
     () => projects([{ rootFolder: '.', preset: 'other', rules: null }]),
-    /rules must be an object/,
+    /must be an object/,
   )
 
   assert.throws(
     () => projects([{ rootFolder: '.', preset: 'other', rules: [] }]),
-    /rules must be an object/,
+    /must be an object/,
   )
 
   assert.throws(
     () => projects([{ rootFolder: '.', preset: 'other', rules: 'off' }]),
-    /rules must be an object/,
+    /must be an object/,
   )
 })
 
@@ -1250,7 +1263,7 @@ test('validates project rule overrides', () => {
         ],
       },
     ]),
-    /files must be a non-empty array/,
+    /must be a non-empty array/,
   )
 
   assert.throws(
@@ -1266,6 +1279,151 @@ test('validates project rule overrides', () => {
         ],
       },
     ]),
-    /rules must be an object/,
+    /must be an object/,
   )
 })
+
+test('rejects unsupported override properties and escaping paths', () => {
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        preset: 'other',
+        overrides: [
+          {
+            files: ['src/**/*.ts'],
+            rules: {},
+            file: ['src/**/*.ts'],
+          },
+        ],
+      },
+    ]),
+    /not a supported property/,
+  )
+
+  for (const file of [
+    '../outside.ts',
+    '/absolute/file.ts',
+    'C:/absolute/file.ts',
+    'src/../../outside.ts',
+  ]) {
+    assert.throws(
+      () => projects([
+        {
+          rootFolder: '.',
+          preset: 'other',
+          overrides: [
+            {
+              files: [file],
+              rules: {},
+            },
+          ],
+        },
+      ]),
+      /inside the project rootFolder/,
+      file,
+    )
+  }
+})
+
+test('normalizes and prefixes override files', () => {
+  const configs = projects([
+    {
+      rootFolder: 'apps/web',
+      preset: 'other',
+      overrides: [
+        {
+          files: ['./src/**/*.ts', '!src/generated/**'],
+          rules: {},
+        },
+      ],
+    },
+  ])
+
+  const override = configs.find((config) =>
+    config.files?.includes('apps/web/src/**/*.ts'),
+  )
+
+  assert.ok(override)
+  assert.ok(override.files.includes('!apps/web/src/generated/**'))
+})
+
+test('detects jsconfig and tsconfig variants', () => {
+  writeTemp('jsconfig-project/jsconfig.json', '{}')
+  writeTemp('variant-project/tsconfig.app.json', '{}')
+
+  const roots = {
+    jsconfig: path.relative(
+      process.cwd(),
+      path.join(tempRoot, 'jsconfig-project'),
+    ).split(path.sep).join('/'),
+    variant: path.relative(
+      process.cwd(),
+      path.join(tempRoot, 'variant-project'),
+    ).split(path.sep).join('/'),
+  }
+
+  const [jsconfig] = projects([
+    { rootFolder: roots.jsconfig, preset: 'other' },
+  ])
+  const [variant] = projects([
+    { rootFolder: roots.variant, preset: 'other' },
+  ])
+
+  assert.equal(jsconfig.settings['import-x/resolver-next'].length, 2)
+  assert.equal(variant.settings['import-x/resolver-next'].length, 2)
+})
+
+test('enables type-aware rules when requested', () => {
+  const [config] = projects([
+    { rootFolder: '.', preset: 'other', typeAware: true },
+  ])
+
+  assert.deepEqual(config.languageOptions.parserOptions, {
+    projectService: true,
+    tsconfigRootDir: process.cwd(),
+  })
+  assert.equal(config.rules['ai-rules/no-floating-promises'], 'error')
+  assert.equal(config.rules['ai-rules/no-misused-promises'], 'error')
+  assert.equal(config.rules['ai-rules/await-thenable'], 'error')
+  assert.equal(projectSettings(config).typeAware, true)
+
+  assert.throws(
+    () => projects([
+      { rootFolder: '.', preset: 'other', typeAware: 'yes' },
+    ]),
+    /typeAware must be a boolean/,
+  )
+})
+
+test('rejects unsupported relations properties', () => {
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        preset: 'other',
+        relations: {
+          layers: { controller: 'src/controllers' },
+          rules: [{ from: 'controller', allow: [], allowes: [] }],
+        },
+      },
+    ]),
+    /not a supported property/,
+  )
+
+  assert.throws(
+    () => projects([
+      {
+        rootFolder: '.',
+        preset: 'other',
+        relations: {
+          layers: { controller: 'src/controllers' },
+          rules: [{ from: 'controller', allow: [] }],
+          scope: { capture: 'page', layers: [], unknown: true },
+        },
+      },
+    ]),
+    /not a supported property/,
+  )
+})
+

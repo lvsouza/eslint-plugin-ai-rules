@@ -9,6 +9,7 @@ import boundaries from 'eslint-plugin-boundaries'
 import aiRules from '../dist/index.js'
 
 const ownRuleNames = new Set([
+  'app-page-scope',
   'filename-pascal-case',
   'no-multiline-imports',
   'project-setup',
@@ -90,7 +91,7 @@ test('recommended and projects expose only ai-rules rules and plugins', () => {
   ])
 
   for (const ruleId of Object.keys(aiRules.configs.recommended[0].rules)) {
-    assert.match(ruleId, /^(?:ai-rules\/|max-len$|no-debugger$)/)
+    assert.match(ruleId, /^(?:ai-rules\/|max-len$|no-debugger$|no-console$)/)
   }
 
   const [config] = aiRules.configs.projects([

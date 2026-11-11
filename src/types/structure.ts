@@ -59,6 +59,7 @@ export interface IProjectDefinition {
   relations?: IRelationsConfig
   rules?: Linter.RulesRecord
   overrides?: IProjectRulesOverride[]
+  typeAware?: boolean
 }
 
 export interface IProjectPreset {
@@ -66,6 +67,7 @@ export interface IProjectPreset {
   relations?: IRelationsConfig
   rules?: Linter.RulesRecord
   overrides?: IProjectRulesOverride[]
+  typeAware?: boolean
 }
 
 export interface IResolvedProject {
@@ -73,6 +75,7 @@ export interface IResolvedProject {
   preset?: TProjectPreset
   structure: IProjectStructure
   relations?: IRelationsConfig
+  typeAware?: boolean
 }
 
 export interface IAiRulesSettings {

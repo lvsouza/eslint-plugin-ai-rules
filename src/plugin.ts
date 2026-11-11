@@ -1,6 +1,7 @@
 import { filenamePascalCase } from './rules/FilenamePascalCase'
 import { noMultilineImports } from './rules/NoMultilineImports'
 import { projectStructure } from './rules/ProjectStructure'
+import { appPageScope } from './rules/AppPageScope'
 import { projectSetup } from './rules/ProjectSetup'
 import { sortImports } from './rules/SortImports'
 import { bundledRules } from './rules/bundled'
@@ -17,6 +18,7 @@ export const plugin = {
   },
   rules: {
     ...bundledRules,
+    [RULE_NAMES.appPageScope]: appPageScope,
     [RULE_NAMES.filenamePascalCase]: filenamePascalCase,
     [RULE_NAMES.noMultilineImports]: noMultilineImports,
     [RULE_NAMES.projectSetup]: projectSetup,

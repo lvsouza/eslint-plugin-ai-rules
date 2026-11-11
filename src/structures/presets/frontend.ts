@@ -2,6 +2,14 @@ import { commonIgnoredPaths, configFileDefaultExportOverride, pascalTs, pascalTs
 import type { IProjectPreset, IRelationsConfig } from '@/types/structure'
 
 
+const assetFiles = [
+  'index.ts',
+  '*.{png,jpg,jpeg,gif,svg,webp,avif,ico}',
+  '*.{woff,woff2,ttf,otf}',
+  '*.{mp4,webm,mp3,wav,pdf}',
+]
+
+
 export const frontendRelations: IRelationsConfig = {
   layers: {
     pageComponent: ['src/pages/*/components', 'src/pages/*/tabs'],
@@ -223,12 +231,13 @@ export const frontendPreset: IProjectPreset = {
           shared: {
             folders: {
               assets: {
-                files: [
-                  'index.ts',
-                  '*.{png,jpg,jpeg,gif,svg,webp,avif,ico}',
-                  '*.{woff,woff2,ttf,otf}',
-                  '*.{mp4,webm,mp3,wav,pdf}',
-                ],
+                files: assetFiles,
+                folders: {
+                  '[asset-group]': {
+                    name: { case: 'kebab-case' },
+                    files: assetFiles,
+                  },
+                },
               },
               components: {
                 files: [pascalTsx],

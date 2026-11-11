@@ -7,6 +7,7 @@ import { plugin } from '@/plugin'
 
 const UNRESOLVED_IGNORE = [
   '\\.(css|scss|sass|less|styl|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|mp4|webm|mp3|wav|pdf)(\\?.*)?$',
+  '\\?(raw|url|inline|worker|sharedworker)$',
 ]
 
 export const recommended: Linter.Config[] = [
@@ -36,6 +37,23 @@ export const recommended: Linter.Config[] = [
       [BUNDLED_RULE_IDS.noUnresolved]: [
         'error',
         { ignore: UNRESOLVED_IGNORE },
+      ],
+      [BUNDLED_RULE_IDS.noUselessPathSegments]: 'error',
+      [BUNDLED_RULE_IDS.noExtraneousDependencies]: [
+        'warn',
+        {
+          devDependencies: true,
+          optionalDependencies: true,
+          peerDependencies: true,
+        },
+      ],
+      [BUNDLED_RULE_IDS.noCycle]: [
+        'warn',
+        { maxDepth: 5, ignoreExternal: true },
+      ],
+      'no-console': [
+        'warn',
+        { allow: ['info', 'warn', 'error'] },
       ],
       [BUNDLED_RULE_IDS.semi]: ['error', 'never'],
       [BUNDLED_RULE_IDS.consistentTypeImports]: [

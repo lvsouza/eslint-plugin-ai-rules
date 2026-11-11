@@ -7,23 +7,30 @@
 - `nextjs` preset now allows page-exclusive resources under `src/shared/pages/<page-kebab>/` (`components`, `hooks`, `services`, `contexts`, `helpers` and page files). The page-local relation layers are extended to these folders, keeping imports scoped to the same page.
 - File-scoped `overrides` for project definitions and presets. `projects()` now returns one config per override in addition to the base project config.
 - `nextjs` preset ships overrides that disable `ai-rules/no-default-export` for Next.js framework files, and all presets disable it for `*.config.{js,mjs,cjs,ts}`.
-- `frontend` and `nextjs` presets allow `src/shared/assets` with common image, font and media files.
+- `frontend` and `nextjs` presets allow `src/shared/assets` and `src/shared/assets/<asset-group-kebab>/` with common image, font and media files.
 - `nextjs` preset adds `next-env.d.ts`, `.next/**` and `out/**` as ignored paths, supports `global-not-found.tsx`, `proxy.ts` and `instrumentation-client.ts`, and maps `src/app` as a relation layer.
+- `nextjs` preset validates App Router segment names, accepting kebab-case routes, route groups, dynamic/catch-all segments, parallel routes and intercepting routes.
+- New `ai-rules/app-page-scope` rule prevents an app route from importing another page under `src/shared/pages/*`.
 - Frontend presets ignore `.storybook/**`, `.turbo/**`, `.vercel/**` and `storybook-static/**`.
-- New recommended rules: `ai-rules/no-explicit-any`, `ai-rules/no-non-null-assertion`, `ai-rules/no-self-import`, `ai-rules/no-unresolved` and core `no-debugger`.
-- TypeScript import resolution through `import-x/resolver-next` when `tsconfig.json` exists.
+- New recommended rules: `ai-rules/no-explicit-any`, `ai-rules/no-non-null-assertion`, `ai-rules/no-self-import`, `ai-rules/no-unresolved`, `ai-rules/no-useless-path-segments`, `ai-rules/no-extraneous-dependencies`, `ai-rules/no-cycle`, core `no-debugger` and core `no-console`.
+- Optional `typeAware` project flag enables `ai-rules/no-floating-promises`, `ai-rules/no-misused-promises` and `ai-rules/await-thenable`, and configures `parserOptions.projectService`.
+- TypeScript import resolution through `import-x/resolver-next` when `tsconfig.json`, `jsconfig.json` or `tsconfig.*.json` exists.
 
 ### Changed
 
 - The merged `preset + structure` is validated after merging, and unsupported structure properties are rejected instead of being silently ignored.
+- Unsupported properties in `relations`, preset overrides and project overrides are rejected.
+- Override file patterns are normalized and restricted to the project `rootFolder`; negated patterns are supported.
 - `projects()` now configures the TypeScript resolver even when `relations` are not present.
 - `ai-rules/no-relative-parent-imports` now ignores non-relative specifiers, so aliases such as `@/` keep working with the TypeScript resolver.
+- `ai-rules/no-unresolved` ignores Vite query imports such as `?raw`, `?url`, `?worker` and `?inline`.
 
 ### Breaking
 
-- `ai-rules/no-explicit-any`, `ai-rules/no-non-null-assertion`, `ai-rules/no-self-import`, `ai-rules/no-unresolved` and `no-debugger` are now enabled as `error` by `recommended`.
+- New recommended rules are enabled by default: `ai-rules/no-explicit-any`, `ai-rules/no-non-null-assertion`, `ai-rules/no-self-import`, `ai-rules/no-unresolved` and `no-debugger` as `error`; `ai-rules/no-extraneous-dependencies`, `ai-rules/no-cycle` and `no-console` as `warn`.
 - `projects()` can return more than one flat config per project due to file-scoped overrides. Spreading the result continues to work; code that indexes a single config per project must be updated.
-- `nextjs` preset rejects files that are not part of the current Next.js conventions unless they are declared in the project `structure` or `overrides`.
+- `nextjs` preset rejects route folders that are not kebab-case or do not use a supported Next.js convention, and rejects files that are not part of the current Next.js conventions unless they are declared in the project `structure` or `overrides`.
+- `ai-rules/app-page-scope` is enabled as `error` in the `nextjs` preset.
 
 ## 1.1.0 - 2026-11-11
 

@@ -1,5 +1,22 @@
+import { assertKnownKeys } from '@/utils/assertKnownKeys'
 import type { IRelationsConfig } from '@/types/structure'
 
+
+const RELATIONS_KEYS = new Set([
+  'layers',
+  'rules',
+  'allowTypeImports',
+  'scope',
+])
+const RULE_KEYS = new Set([
+  'from',
+  'allow',
+  'deny',
+  'allowSameLayer',
+  'allowTypeImports',
+  'message',
+])
+const SCOPE_KEYS = new Set(['capture', 'layers'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -53,6 +70,8 @@ export function validateRelations(
     throw new Error('Invalid relations: relations must be an object.')
   }
 
+  assertKnownKeys(value, RELATIONS_KEYS, 'relations', 'Invalid relations')
+
   if (!isRecord(value.layers)) {
     throw new Error('Invalid relations: "relations.layers" must be an object.')
   }
@@ -85,6 +104,8 @@ export function validateRelations(
     if (!isRecord(rule)) {
       throw new Error(`Invalid relations: "${rulePath}" must be an object.`)
     }
+
+    assertKnownKeys(rule, RULE_KEYS, rulePath, 'Invalid relations')
 
     assertString(rule.from, `${rulePath}.from`)
 
@@ -137,6 +158,13 @@ export function validateRelations(
     if (!isRecord(value.scope)) {
       throw new Error('Invalid relations: "relations.scope" must be an object.')
     }
+
+    assertKnownKeys(
+      value.scope,
+      SCOPE_KEYS,
+      'relations.scope',
+      'Invalid relations',
+    )
 
     assertString(value.scope.capture, 'relations.scope.capture')
 

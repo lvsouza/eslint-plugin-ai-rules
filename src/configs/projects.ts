@@ -10,11 +10,13 @@ import { validateStructure } from '@/structures/validateStructure'
 import { BUNDLED_RULE_IDS, RULE_IDS } from '@/rules/constants'
 import { mergeRelations } from '@/structures/mergeRelations'
 import { mergeStructure } from '@/structures/mergeStructure'
+import { assertKnownKeys } from '@/utils/assertKnownKeys'
 import { getPreset } from '@/structures/presets'
 import { recommended } from './recommended'
 
 
 const PROJECT_PRESETS: TProjectPreset[] = ['frontend', 'nextjs', 'backend', 'other']
+const OVERRIDE_KEYS = new Set(['files', 'rules'])
 
 function normalizeRootFolder(rootFolder: string): string {
   const absolutePath = path.resolve(process.cwd(), rootFolder.trim())
@@ -55,37 +57,71 @@ function isRulesRecord(value: unknown): value is Linter.RulesRecord {
   )
 }
 
-function validateRulesOverrides(
-  value: unknown,
-  label: string,
-): asserts value is IProjectRulesOverride[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`${label} overrides must be an array.`)
+function normalizeOverrideFile(file: string, pathLabel: string): string {
+  const trimmed = file.trim()
+  const negated = trimmed.startsWith('!')
+  const raw = negated ? trimmed.slice(1) : trimmed
+  const normalized = raw.replaceAll('\\', '/').replace(/^\.\//, '')
+
+  if (normalized.length === 0) {
+    throw new Error(`${pathLabel} must be a non-empty string.`)
   }
 
-  value.forEach((entry, index) => {
-    const overridePath = `${label} overrides[${index}]`
+  if (
+    path.isAbsolute(normalized) ||
+    /^[A-Za-z]:\//.test(normalized) ||
+    normalized.split('/').includes('..')
+  ) {
+    throw new Error(
+      `${pathLabel} must be inside the project rootFolder.`,
+    )
+  }
+
+  return negated ? `!${normalized}` : normalized
+}
+
+function normalizeRulesOverrides(
+  value: unknown,
+  label: string,
+): IProjectRulesOverride[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label}: overrides must be an array.`)
+  }
+
+  return value.map((entry, index) => {
+    const overridePath = `overrides[${index}]`
 
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-      throw new Error(`${overridePath} must be an object.`)
+      throw new Error(`${label}: "${overridePath}" must be an object.`)
     }
 
     const override = entry as Record<string, unknown>
 
+    assertKnownKeys(override, OVERRIDE_KEYS, overridePath, label)
+
     if (!Array.isArray(override.files) || override.files.length === 0) {
-      throw new Error(`${overridePath}.files must be a non-empty array.`)
+      throw new Error(
+        `${label}: "${overridePath}.files" must be a non-empty array.`,
+      )
     }
 
-    override.files.forEach((file, fileIndex) => {
-      if (typeof file !== 'string' || file.trim().length === 0) {
-        throw new Error(
-          `${overridePath}.files[${fileIndex}] must be a non-empty string.`,
-        )
+    const files = override.files.map((file, fileIndex) => {
+      const filePath = `${overridePath}.files[${fileIndex}]`
+
+      if (typeof file !== 'string') {
+        throw new Error(`${label}: "${filePath}" must be a non-empty string.`)
       }
+
+      return normalizeOverrideFile(file, `${label}: "${filePath}"`)
     })
 
     if (!isRulesRecord(override.rules)) {
-      throw new Error(`${overridePath}.rules must be an object.`)
+      throw new Error(`${label}: "${overridePath}.rules" must be an object.`)
+    }
+
+    return {
+      files,
+      rules: override.rules,
     }
   })
 }
@@ -113,6 +149,15 @@ function validateDefinition(
   ) {
     throw new Error(
       `Invalid project at index ${index}: preset must be one of: ${PROJECT_PRESETS.join(', ')}.`,
+    )
+  }
+
+  if (
+    definition.typeAware !== undefined &&
+    typeof definition.typeAware !== 'boolean'
+  ) {
+    throw new Error(
+      `Invalid project at index ${index}: typeAware must be a boolean.`,
     )
   }
 
@@ -148,9 +193,9 @@ function validateDefinition(
 
   if (definition.overrides !== undefined) {
     try {
-      validateRulesOverrides(
+      normalizeRulesOverrides(
         definition.overrides,
-        `Invalid project at index ${index}:`,
+        `Invalid project at index ${index}`,
       )
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -214,6 +259,7 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     const structure = resolveStructure(definition, preset, index)
     const structureEnabled = hasStructureRules(structure)
     const relations = mergeRelations(preset?.relations, definition.relations)
+    const typeAware = definition.typeAware ?? preset?.typeAware ?? false
 
     if (relations) {
       try {
@@ -255,6 +301,13 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
             ],
           }
         : {}),
+      ...(typeAware
+        ? {
+            [BUNDLED_RULE_IDS.noFloatingPromises]: 'error',
+            [BUNDLED_RULE_IDS.noMisusedPromises]: 'error',
+            [BUNDLED_RULE_IDS.awaitThenable]: 'error',
+          }
+        : {}),
       ...(preset?.rules ?? {}),
       ...(definition.rules ?? {}),
     }
@@ -270,6 +323,7 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
           preset: definition.preset,
           structure,
           relations,
+          typeAware,
         },
       },
     }
@@ -279,6 +333,16 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
         ...baseConfig.plugins,
       },
       ...(ignoredPaths.length > 0 ? { ignores: ignoredPaths } : {}),
+      ...(typeAware
+        ? {
+            languageOptions: {
+              parserOptions: {
+                projectService: true,
+                tsconfigRootDir: rootAbsolutePath,
+              },
+            },
+          }
+        : {}),
       settings,
     }
 
@@ -289,14 +353,30 @@ export function projects(definitions: IProjectDefinition[]): Linter.Config[] {
     })
 
     const overrides = [
-      ...(preset?.overrides ?? []),
-      ...(definition.overrides ?? []),
+      ...(preset?.overrides
+        ? normalizeRulesOverrides(
+            preset.overrides,
+            `Invalid preset "${definition.preset}"`,
+          )
+        : []),
+      ...(definition.overrides
+        ? normalizeRulesOverrides(
+            definition.overrides,
+            `Invalid project at index ${index}`,
+          )
+        : []),
     ]
 
     for (const override of overrides) {
       configs.push({
         ...sharedConfig,
-        files: override.files.map((file) => `${rootPrefix}${file}`),
+        files: override.files.map((file) => {
+          if (file.startsWith('!')) {
+            return `!${rootPrefix}${file.slice(1)}`
+          }
+
+          return `${rootPrefix}${file}`
+        }),
         rules: {
           ...override.rules,
           ...(preset?.rules ?? {}),

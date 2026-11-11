@@ -38,6 +38,7 @@ test('ESM exports are wired correctly', () => {
 
 test('rule names are stable and kebab-cased', () => {
   const ownRuleNames = [
+    'app-page-scope',
     'filename-pascal-case',
     'no-multiline-imports',
     'project-setup',
@@ -62,15 +63,18 @@ test('rule names are stable and kebab-cased', () => {
     'consistent-type-imports',
     'filename-pascal-case',
     'naming-convention',
+    'no-cycle',
     'no-default-export',
     'no-duplicates',
     'no-explicit-any',
+    'no-extraneous-dependencies',
     'no-multiline-imports',
     'no-non-null-assertion',
     'no-relative-parent-imports',
     'no-self-import',
     'no-unresolved',
     'no-unused-vars',
+    'no-useless-path-segments',
     'project-setup',
     'semi',
     'sort-imports',

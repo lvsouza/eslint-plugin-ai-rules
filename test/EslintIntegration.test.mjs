@@ -311,6 +311,26 @@ test('ESLint allows default exports required by Next.js and config files', async
     'next-defaults/src/app/page.tsx',
     'export default function Page() { return null }\n',
   )
+  write(
+    'next-defaults/src/app/global-not-found.tsx',
+    'export default function GlobalNotFound() { return null }\n',
+  )
+  write(
+    'next-defaults/src/app/sitemap.ts',
+    'export default function sitemap() { return [] }\n',
+  )
+  write(
+    'next-defaults/src/app/(shop)/products/[slug]/page.tsx',
+    'export default function Page() { return null }\n',
+  )
+  write(
+    'next-defaults/src/proxy.ts',
+    'export default function proxy() { return null }\n',
+  )
+  write(
+    'next-defaults/src/instrumentation-client.ts',
+    'export function register() { return null }\n',
+  )
   write('next-defaults/eslint.config.mjs', 'export default []\n')
   write(
     'next-defaults/src/shared/helpers/Bad.ts',
@@ -324,6 +344,11 @@ test('ESLint allows default exports required by Next.js and config files', async
     configs,
     [
       projectPath('next-defaults/src/app/page.tsx'),
+      projectPath('next-defaults/src/app/global-not-found.tsx'),
+      projectPath('next-defaults/src/app/sitemap.ts'),
+      projectPath('next-defaults/src/app/(shop)/products/[slug]/page.tsx'),
+      projectPath('next-defaults/src/proxy.ts'),
+      projectPath('next-defaults/src/instrumentation-client.ts'),
       projectPath('next-defaults/eslint.config.mjs'),
       projectPath('next-defaults/src/shared/helpers/Bad.ts'),
     ],
@@ -332,6 +357,7 @@ test('ESLint allows default exports required by Next.js and config files', async
 
   assert.equal(messages.length, 1)
   assert.match(messages[0].message, /Prefer named exports/)
+  assert.equal(messagesFor(results, 'ai-rules/project-structure').length, 0)
 })
 
 test('ESLint resolves TypeScript aliases for no-unresolved', async () => {
@@ -347,7 +373,7 @@ test('ESLint resolves TypeScript aliases for no-unresolved', async () => {
   write('unresolved/src/shared/helpers/Format.ts', 'export const value = 1\n')
   write(
     'unresolved/src/app/page.tsx',
-    "import '@/shared/helpers/Format'\nimport '@/shared/helpers/Missing'\nimport './globals.css'\nexport default function Page() { return null }\n",
+    "import '@/shared/helpers/Format'\nimport '@/shared/helpers/Missing'\nimport './globals.css'\nimport './worker?worker'\nexport default function Page() { return null }\n",
   )
 
   const configs = aiRules.configs.projects([
@@ -361,4 +387,36 @@ test('ESLint resolves TypeScript aliases for no-unresolved', async () => {
 
   assert.equal(messages.length, 1)
   assert.match(messages[0].message, /Missing/)
+})
+
+test('ESLint does not treat aliases as relative parent imports', async () => {
+  const root = projectPath('alias-parent')
+
+  writeJson('alias-parent/tsconfig.json', {
+    compilerOptions: {
+      paths: {
+        '@/*': ['./src/*'],
+      },
+    },
+  })
+  write('alias-parent/src/Parent.ts', 'export const value = 1\n')
+  write(
+    'alias-parent/src/child/Child.ts',
+    "import { value } from '@/Parent'\nimport { value as parent } from '../Parent'\nexport const result = value + parent\n",
+  )
+
+  const configs = aiRules.configs.projects([
+    { rootFolder: root, preset: 'other' },
+  ])
+  const results = await lint(
+    configs,
+    [projectPath('alias-parent/src/child/Child.ts')],
+  )
+  const messages = messagesFor(
+    results,
+    'ai-rules/no-relative-parent-imports',
+  )
+
+  assert.equal(messages.length, 1)
+  assert.match(messages[0].message, /Relative imports/)
 })
